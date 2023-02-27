@@ -31,7 +31,7 @@ if __name__ == '__main__':
                 clip_grad_norm=0.5)
     agent.to(device, torch.float32, np.float32)
 
-    agent.learn(epochs=1000, n_steps=500)
+    agent.learn(epochs=500, n_steps=500)
 
     env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x:x%100==0)
     agent.env = env
