@@ -13,5 +13,5 @@ def homo_predictor():
     return homo_predictor
 
 def test_homo_predictor(homo_predictor):
-    assert abs(homo_predictor.predict("./PC1=CC=C2C3=C(C=C(Br)N=C3)C3=C(P)C=CC4=C5C=NC(Br)=CC5=C1C2=C43.xyz")+4.974857330322266) < EPISILON
+    assert abs(homo_predictor("./PC1=CC=C2C3=C(C=C(Br)N=C3)C3=C(P)C=CC4=C5C=NC(Br)=CC5=C1C2=C43.xyz")+4.974857330322266) < EPISILON
 

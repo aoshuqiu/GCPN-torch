@@ -8,7 +8,7 @@ from molgym.utils import get_atoms_type_and_xyz
 
 class HomoPredictor(Predictor):
     
-    def predict(self, mol):
+    def __call__(self, mol):
         """
         Predict homo scalar of molecule xyz file.
 

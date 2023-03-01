@@ -24,7 +24,7 @@ class Predictor:
 
 
 
-    def predict(self, mol):
+    def __call__(self, mol):
         """
         Predict molecule performance.
 
