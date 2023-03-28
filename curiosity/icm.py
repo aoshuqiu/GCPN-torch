@@ -69,7 +69,7 @@ class InverseModel(nn.Module):
 
 class MlpICMModel(ICMModel):
     def __init__(self, state_converter: Converter, action_converter: Converter):
-        assert len(state_converter.shpae) == 1, 'Only flat spaces supported by MLP model'
+        assert len(state_converter.shape) == 1, 'Only flat spaces supported by MLP model'
         assert len(action_converter.shape) == 1, 'Only flat action spaces supported by MLP model'
         super().__init__(state_converter, action_converter)
         self.encoder = nn.Sequential(
@@ -136,6 +136,7 @@ class ICM(Curiosity):
         self.reward_scale = reward_scale
         self.weight = weight
         self.intrinsic_reward_integration = intrinsic_reward_integration
+        self.reporter = reporter
 
     def parameters(self) -> Generator[nn.Parameter, None, None]:
         return self.model.parameters()
@@ -183,7 +184,7 @@ class ICM(Curiosity):
         :param reporter: reporter used to report training tatistics, defaults to NoReporter()
         :return: factory
         """        
-        return ICM(model_factory, policy_weight, reward_scale, weight, intrinsic_reward_integration, reporter)
+        return ICMFactory(model_factory, policy_weight, reward_scale, weight, intrinsic_reward_integration, reporter)
 
 class ICMFactory(CuriosityFactory):
     def __init__(self, model_factory: ICMModelFactory, policy_weight: float, reward_scale: float, weight: float,

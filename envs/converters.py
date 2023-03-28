@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABCMeta
-from typing import Tuple
+from typing import Tuple,Dict
 
 import numpy as np
 from gym import Space
@@ -9,7 +9,9 @@ from torch import Tensor, nn
 from torch.distributions import Distribution, Categorical, Normal
 from torch.nn import CrossEntropyLoss, MSELoss
 
+from molgym.envs import MolecularObDictSpace, MolecularActionTupleSpace
 from normalizers import Normalizer, NoNormalizer, StandardNormalizer
+from envs.multicategorical import MultiCategorical
 
 
 class Converter(metaclass=ABCMeta):
@@ -45,7 +47,7 @@ class Converter(metaclass=ABCMeta):
     @abstractmethod
     def reshape_as_input(self, array: np.ndarray, recurrent: bool):
         """
-        Converts the array to match the shape returned by the ``shape`` property
+        Converts the array to match the shape returned by the ``shape`` property, Only use for states.
 
         :param array: array of shape ``N*T*(any shape produced by the underlying ``gym.Space``
         :param recurrent: whether reshaping for recurrent model or not
@@ -96,6 +98,10 @@ class Converter(metaclass=ABCMeta):
             return DiscreteConverter(space)
         elif isinstance(space, spaces.Box):
             return BoxConverter(space)
+        elif isinstance(space, MolecularActionTupleSpace):
+            return MolecularActionConverter(space)
+        elif isinstance(space, MolecularObDictSpace):
+            return MolecularStateConverter(space)
 
 class DiscreteConverter(Converter):
     """
@@ -131,6 +137,50 @@ class DiscreteConverter(Converter):
 
     def policy_out_model(self, in_features: int) -> nn.Module:
         return nn.Linear(in_features, self.shape[0])
+    
+class MolecularActionConverter(DiscreteConverter):
+    """
+    Molecule action for construct.
+    """
+
+    def __init__(self, space: MolecularActionTupleSpace) -> None:
+        self.max_atom_num = space.max_atom_num
+        self.possible_atom_num = space.possible_atom_num
+        self.edge_type_num = space.edge_type_num
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return 2+2*self.max_atom_num-self.possible_atom_num\
+                       +self.edge_type_num
+    
+    def distribution(self, logits) -> Distribution:
+        # debug
+        # print('logits.shape: ',logits.shape)
+        # print('logits.dtype: ',logits.dtype)
+        return MultiCategorical(logits, [self.max_atom_num-self.possible_atom_num, self.max_atom_num, self.edge_type_num,2])
+    
+    def reshape_as_input(self, array: np.ndarray, recurrent: bool):
+        pass
+
+    def policy_out_model(self, in_features: int) -> nn.Module:
+        action_space = 2+2*self.max_atom_num-self.possible_atom_num\
+                       +self.edge_type_num
+        return nn.Linear(in_features, action_space)
+
+class MolecularStateConverter(DiscreteConverter):
+    def __init__(self, space: MolecularObDictSpace) -> None:
+        self.max_atom_num = space.max_atom_num
+        self.possible_atom_num = space.possible_atom_num
+        self.edge_type_num = space.edge_type_num
+    
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return self.max_atom_num*self.edge_type_num*self.possible_atom_num
+    
+    def reshape_as_input(self, array: np.ndarray, recurrent: bool):
+        return array if recurrent else array.reshape(array.shape[0] * array.shape[1], -1)
+    
+
 
 class BoxConverter(Converter):
     """

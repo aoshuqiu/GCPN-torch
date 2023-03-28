@@ -16,7 +16,7 @@ class StandardNormalizer(Normalizer):
         self.scaler.partial_fit(self._reshape_for_scaler(array))
 
     def transform(self, array: np.ndarray) -> np.ndarray:
-        return self.scaler.transfrom(self._reshape_for_scaler(array)).reshape(array.shape)
+        return self.scaler.transform(self._reshape_for_scaler(array)).reshape(array.shape)
 
     @staticmethod
     def _reshape_for_scaler(array: np.ndarray):

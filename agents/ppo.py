@@ -55,7 +55,22 @@ class PPOLoss(_Loss):
                 value: Tensor, action: Tensor, reward: Tensor, advantage: Tensor):
         # Value loss
         value_old_clipped = value_old + (value - value_old).clamp(-self.v_clip_range, self.v_clip_range)
+        if torch.isnan((reward - value_old_clipped).pow(2)).sum()>0 or torch.isinf((reward - value_old_clipped).pow(2)).sum()>0:
+            print('reward', reward)
+            print('value_old_clipped', value_old_clipped)
+            print('value', value)
+            print('value_old', value_old)
+            print('value_old_clipped', value_old_clipped)
+            print('reward - value_old_clipped', reward - value_old_clipped)
+            print('(reward - value_old_clipped).pow(2)', (reward - value_old_clipped).pow(2))
         v_old_loss_clipped = (reward - value_old_clipped).pow(2)
+        if torch.isnan((reward-value).pow(2)).sum()>0 or torch.isinf((reward-value).pow(2)).sum()>0:
+            print('reward', reward)
+            print('value', value)
+            print('value_old', value_old)
+            print('value_old_clipped', value_old_clipped)
+            print('reward - value', reward - value)
+            print('(reward - value).pow(2)', (reward - value).pow(2))
         v_loss = (reward - value).pow(2)
         value_loss = torch.min(v_old_loss_clipped, v_loss).mean()
 
@@ -63,7 +78,16 @@ class PPOLoss(_Loss):
         advantage = (advantage - advantage.mean()) /  (advantage.std(unbiased=False) + 1e-8)
         advantage.detach_()
         log_prob = distribution.log_prob(action)
+
+        # dubug
+        # print("distribution_old.logits: ", distribution_old.logits)
+        # print("action: ", action)
         log_prob_old = distribution_old.log_prob(action)
+        if torch.isnan((log_prob - log_prob_old).exp()).sum()>0 or torch.isinf((log_prob - log_prob_old).exp()).sum()>0:
+            print('log_prob', log_prob)
+            print('log_prob_old', log_prob_old)
+            print('log_prob - log_prob_old', log_prob - log_prob_old)
+            print('(log_prob - log_prob_old).exp()', (log_prob - log_prob_old).exp())
         ratio = (log_prob - log_prob_old).exp().view(-1)
 
         surrogate = advantage * ratio

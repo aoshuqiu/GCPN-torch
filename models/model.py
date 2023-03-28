@@ -33,7 +33,7 @@ class Model(nn.Module, metaclass=ABCMeta):
     @abstractmethod
     def recurrent(self) -> bool:
         """
-        :return: whether the model is recurrent of not
+        :return: whether the model is recurrent or not
         """
         raise NotImplementedError('Implement me')
 

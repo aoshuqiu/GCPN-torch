@@ -1,0 +1,6 @@
+setup.py
+molgym.egg-info/PKG-INFO
+molgym.egg-info/SOURCES.txt
+molgym.egg-info/dependency_links.txt
+molgym.egg-info/requires.txt
+molgym.egg-info/top_level.txt

@@ -6,6 +6,7 @@ import numpy as np
 
 from envs.utils import tile_images
 from reporters import Reporter, NoReporter
+import molgym
 class SubProcessEnv(Process):
     """
     Process that runs the environment. It is controlled by ``MultiEnv`` using ``Pipe``s
@@ -40,6 +41,8 @@ class SubProcessEnv(Process):
             elif command == 'reset':
                 steps = 0
                 collected_reward = 0
+                # debug
+                # print("origin original reset", env.reset().shape)
                 self.pipe.send(env.reset())
             elif command == 'render':
                 self.pipe.send(env.render(args))

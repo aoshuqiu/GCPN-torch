@@ -57,5 +57,3 @@ class MLP(Model):
 class MLPFactory(ModelFactory):
     def create(self, state_space: Converter, action_space: Converter) -> Model:
         return MLP(state_space, action_space)
-
-        

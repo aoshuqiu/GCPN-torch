@@ -7,7 +7,7 @@ from reporters import TensorBoardReporter
 from agents import PPO
 from envs import MultiEnv
 from models import MLP
-from curiosity import NoCuriosity 
+from curiosity import NoCuriosity, ICM, MlpICMModel
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -18,7 +18,9 @@ if __name__ == '__main__':
                 normalize_state=False,
                 normalize_reward=False,
                 model_factory=MLP.factory(),
-                curiosity_factory=NoCuriosity.factory(),
+                curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
+                                              intrinsic_reward_integration=0.01, reporter=reporter),
+                #curiosity_factory=NoCuriosity.factory(),
                 reward=GeneralizedRewardEstimation(gamma=0.99, lam=0.95),
                 advantage = GeneralizedAdvantageEstimation(gamma=0.99, lam=0.95),
                 learning_rate=5e-3,
@@ -31,7 +33,7 @@ if __name__ == '__main__':
                 clip_grad_norm=0.5)
     agent.to(device, torch.float32, np.float32)
 
-    agent.learn(epochs=500, n_steps=500)
+    agent.learn(epochs=250, n_steps=500)
 
     env = gym.wrappers.RecordVideo(env, 'video', episode_trigger=lambda x:x%100==0)
     agent.env = env

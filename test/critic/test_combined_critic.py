@@ -6,7 +6,7 @@ from rdkit import Chem
 from rdkit.Chem.Descriptors import qed
 
 sys.path.append('/home/bachelor/zhangjinhang/molRL/molppo')
-from molgym.critic import CriticMap
+from molgym.envs.critic import CriticMap
 
 EPISILON = 1e-3
 @pytest.fixture

@@ -39,7 +39,7 @@ class Agent:
         :param state: state of shape N * (state space shape) that we want to know the action for 
         :return: the action which is array of shape N * (action space shape)
         """     
-        # add a new axis for normalizer require two dimensions for N and T.   
+        # add a new axis for normalizer require two dimensions for N and T.
         state = self.state_normalizer.transform(state[:, None, :]) 
         reshaped_states = self.state_converter.reshape_as_input(state, self.model.recurrent)
         logits = self.model.policy_logits(torch.tensor(reshaped_states, device=self.device))
@@ -76,6 +76,9 @@ class Agent:
 
         for epoch in range(epochs):
             states, actions, rewards, dones = Runner(self.env, self).run(n_steps, render)
+            # debug:
+            # print("action.dtype: ", actions.dtype)
+            # input()
             states = self.state_normalizer.partial_fit_transform(states)
             rewards = self.curiosity.reward(rewards, states, actions)
             rewards = self.reward_normalizer.partial_fit_transform(rewards)

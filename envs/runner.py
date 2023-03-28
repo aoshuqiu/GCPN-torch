@@ -28,7 +28,7 @@ class Runner:
         :param n_steps: number of steps to run the simulation for
         :param render: whether to render the environment during simulation or not
         :return: returns tuple of(``T`` stands for time steps and usually is equal to ``n_steps``,
-                 ``B`` number of environments in ``MultiEnv``):
+                 ``N`` number of environments in ``MultiEnv``):
 
                  \* ``states`` - of shape N*T*(state space shape) Note ``T`` here is equal to ``n_steps + 1``.
 
@@ -46,6 +46,8 @@ class Runner:
                  \* ``dones`` - of shape N*T
         """
         state = self.env.reset()
+        # debug
+        # print("origin state.shape: ", state.shape)
         states = np.empty(self.get_mini_batch_shape(state.shape, n_steps + 1),
                           dtype=self.env.dtype) # +1 for initial state
         rewards = np.empty(self.get_mini_batch_shape((self.env.n_envs, ), n_steps), dtype=self.env.dtype)
