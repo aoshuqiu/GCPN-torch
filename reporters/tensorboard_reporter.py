@@ -4,7 +4,7 @@ from torch import nn as nn, Tensor
 from reporters.reporter import Reporter
 
 class TensorBoardReporter(Reporter):
-    def __init__(self, logdir: str = None, comment: str = '', report_interval: int =1):
+    def __init__(self, logdir: str = None, comment: str = '', report_interval: int = 1):
         super().__init__(report_interval)
         self.writer = SummaryWriter(logdir, comment)
 

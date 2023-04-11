@@ -8,6 +8,7 @@ import torch
 from torch import Tensor, nn
 from torch.distributions import Distribution, Categorical, Normal
 from torch.nn import CrossEntropyLoss, MSELoss
+import torch.nn.functional as F
 
 from molgym.envs import MolecularObDictSpace, MolecularActionTupleSpace
 from normalizers import Normalizer, NoNormalizer, StandardNormalizer
@@ -144,14 +145,24 @@ class MolecularActionConverter(DiscreteConverter):
     """
 
     def __init__(self, space: MolecularActionTupleSpace) -> None:
+        self.loss = MSELoss()
         self.max_atom_num = space.max_atom_num
         self.possible_atom_num = space.possible_atom_num
         self.edge_type_num = space.edge_type_num
-
+        self.action_dim_list = [0,self.max_atom_num-self.possible_atom_num, self.max_atom_num, self.edge_type_num,2]
+        self.action_start = [sum(self.action_dim_list[0:i+1]) for i in range(len(self.action_dim_list))]
+  
     @property
     def shape(self) -> Tuple[int, ...]:
-        return 2+2*self.max_atom_num-self.possible_atom_num\
-                       +self.edge_type_num
+        return (2+2*self.max_atom_num-self.possible_atom_num\
+                       +self.edge_type_num,)
+    
+    @property
+    def discrete(self) -> bool:
+        return False
+    
+    def distance(self, policy_logits: Tensor, y: Tensor) -> Tensor:
+        return self.loss(policy_logits, self.action_onehot(y.long()))
     
     def distribution(self, logits) -> Distribution:
         # debug
@@ -166,19 +177,28 @@ class MolecularActionConverter(DiscreteConverter):
         action_space = 2+2*self.max_atom_num-self.possible_atom_num\
                        +self.edge_type_num
         return nn.Linear(in_features, action_space)
+    
+    def action_onehot(self, actions:Tensor)-> Tensor:
+        one_hot_actions = torch.zeros(actions.shape[0], self.shape[0], device=actions.device)
+        for i in range(actions.shape[-1]):
+            one_hot = F.one_hot(actions[:, i].to(torch.int64), num_classes=self.action_start[i+1]-self.action_start[i])
+            one_hot_actions[:,self.action_start[i]:self.action_start[i+1]]= one_hot
+        return one_hot_actions
 
 class MolecularStateConverter(DiscreteConverter):
     def __init__(self, space: MolecularObDictSpace) -> None:
         self.max_atom_num = space.max_atom_num
         self.possible_atom_num = space.possible_atom_num
         self.edge_type_num = space.edge_type_num
+        self.node_feature_num = space.node_feature_num
     
     @property
     def shape(self) -> Tuple[int, ...]:
-        return self.max_atom_num*self.edge_type_num*self.possible_atom_num
+        return (self.edge_type_num*self.max_atom_num*(self.max_atom_num+self.node_feature_num),)
     
     def reshape_as_input(self, array: np.ndarray, recurrent: bool):
         return array if recurrent else array.reshape(array.shape[0] * array.shape[1], -1)
+    
     
 
 

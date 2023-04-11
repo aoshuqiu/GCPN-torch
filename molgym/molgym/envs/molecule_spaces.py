@@ -9,6 +9,7 @@ class MolecularObDictSpace(Space):
         self.max_atom_num = max_atom_num
         self.possible_atom_num = possible_atom_num
         self.edge_type_num = edge_type_num
+        self.node_feature_num = node_feature_num
         self._shape = {}
         self._shape["node"] = (1, self.max_atom_num, node_feature_num)
         self._shape["adj"] = (self.edge_type_num, self.max_atom_num, self.max_atom_num)

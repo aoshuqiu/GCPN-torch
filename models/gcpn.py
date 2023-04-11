@@ -138,18 +138,18 @@ class GCPN(Model):
                   "stop":policy_stop}
         policy = self._arrange_policy(policy)
         assert policy.shape[-1] == 2+3+2*self.max_atomn-self.atom_type_num
-        # debug:
-        # print("ac: ", ac.shape)
-        # print("policy: ", policy.shape)
-        # input()
-        # ----------------------
-        for i in range(policy.shape[0]):
-            assert policy[i][int(ac[i][0].item())] > -1e5, f'policy: {policy[i]}, action: {int(ac[i][0].item())}'
-        for i in range(policy.shape[0]):
-            ob_len = GCPN.get_ob_len(torch.tensor(state["node"][i], device=policy.device))
-            for j in range(0, ob_len-9):
-                assert policy[i][j]>-1e5 , f'GCPN error in state{i} not ok state: {state["node"][i] } policy: {policy[i]} j: {j}'
-        #-----------------------
+        # # debug:
+        # # print("ac: ", ac.shape)
+        # # print("policy: ", policy.shape)
+        # # input()
+        # # ----------------------
+        # for i in range(policy.shape[0]):
+        #     assert policy[i][int(ac[i][0].item())] > -1e5, f'policy: {policy[i]}, action: {int(ac[i][0].item())}'
+        # for i in range(policy.shape[0]):
+        #     ob_len = GCPN.get_ob_len(torch.tensor(state["node"][i], device=policy.device))
+        #     for j in range(0, ob_len-9):
+        #         assert policy[i][j]>-1e5 , f'GCPN error in state{i} not ok state: {state["node"][i] } policy: {policy[i]} j: {j}'
+        # #-----------------------
         return ac, policy, value
         
     @staticmethod
@@ -185,7 +185,12 @@ class GCPN(Model):
     @staticmethod
     def mask_logits_len_(logits, mask_len, fill=-1e5):
         seq_range = torch.arange(0, logits.shape[-1], device=logits.device)
-        mask = seq_range.expand(logits.shape)>=torch.tensor(mask_len,device=logits.device).expand(logits.shape)
+        # TODO: test .clone .detach
+        if not isinstance(mask_len, Tensor):
+            mask_len = torch.tensor(mask_len, device=logits.device)
+        else:
+            mask_len = mask_len.clone().detach()
+        mask = seq_range.expand(logits.shape)>=mask_len.expand(logits.shape)
         # debug:
         # print("mask: ", mask)
         # print("logits: ", logits)

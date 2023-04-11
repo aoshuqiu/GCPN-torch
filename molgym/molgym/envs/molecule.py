@@ -239,6 +239,7 @@ class MoleculeEnv(gym.Env):
             else:
                 reward = reward_step + reward_final + reward_valid
             
+            info['smiles'] = self.get_final_smiles()
             if self.is_conditional:
                 info['reward_valid'] = self.conditional[-1] ### temp change
             else:
@@ -590,3 +591,12 @@ class MoleculeEnv(gym.Env):
         assert node.shape[0] == adj.shape[0]
         obarray = np.dstack((adj, node)) 
         return obarray
+    
+    def get_final_smiles(self):
+        """
+        Returns a SMILES of the final molecule. Converts any radical
+        electrons into hydrogens. Works only if molecule is valid
+        :return: SMILES
+        """
+        m = convert_radical_electrons_to_hydrogens(self.mol)
+        return Chem.MolToSmiles(m, isomericSmiles=True)

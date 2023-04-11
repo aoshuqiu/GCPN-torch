@@ -3,6 +3,7 @@ from typing import Tuple, TYPE_CHECKING
 import numpy as np
 
 from envs.multi_env import MultiEnv
+from reporters import NoWriter
 
 if TYPE_CHECKING:
     from agents.agent import Agent
@@ -13,14 +14,14 @@ class Runner:
     Runs the simulation on the environments using specified agent for choosing the actions
     """
 
-    def __init__(self, env: MultiEnv, agent: 'Agent'):
+    def __init__(self, env: MultiEnv, agent: 'Agent', writer = NoWriter()) -> None:
         """
         :param env: environment to be used for the simulation
         :param agent: agent to be used to act on the envrionment
         """
         self.env = env
         self.agent = agent
-
+        self.writer = writer
     def run(self, n_steps: int, render: bool = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Runs the simulation for specified number of steps and aggregates all the observations made on the environment
@@ -54,17 +55,23 @@ class Runner:
         dones = np.empty(self.get_mini_batch_shape((self.env.n_envs, ), n_steps), dtype=self.env.dtype)
         actions = None
         states[:, 0] = state # inital state
+        infos = []
         for step in range(n_steps):
             if render:
                 self.env.render()
             action = self.agent.act(state)
             if step == 0: # lazy init when we know the action space shape
                 actions = np.empty(self.get_mini_batch_shape(action.shape, n_steps), dtype=self.env.dtype)
-            state, reward, done, _ = self.env.step(action)
+            state, reward, done, info = self.env.step(action)
             states[:, step+1] = state
             actions[:, step] = action
             rewards[:, step] = reward
             dones[:, step] = done
+            infos.append(info)
+        reshape_infos = [] # reshape infos 
+        for i in range(len(infos[0])):
+            reshape_infos.extend(list(list(zip(*infos))[i]))
+        self.writer.write(dones, reshape_infos, rewards)
         return states, actions, rewards, dones
 
     def get_mini_batch_shape(self, observation_shape, n_steps):

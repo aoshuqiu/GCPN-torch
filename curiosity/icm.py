@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch import Tensor
 
-from envs import Converter
+from envs import Converter, MolecularActionConverter
 from curiosity import Curiosity, CuriosityFactory
 from reporters import Reporter, NoReporter
 
@@ -48,7 +48,17 @@ class ForwardModel(nn.Module):
         )
 
     def forward(self, state_latent: Tensor, action: Tensor):
+        # print("b4 action shape: ", action.shape)
+        if isinstance(self.action_converter,MolecularActionConverter):
+            action = self.action_converter.action_onehot(action)
+
+        # print("onehot action shape: ", action.shape)
+        # print("self.action_converter.shape[0]", self.action_converter.shape[0])
         action = self.action_encoder(action.long() if self.action_converter.discrete else action)
+        # debug:
+        # print("action shape: ", action.shape)
+        # print("state_latent shape: ", state_latent.shape)
+        # input()
         x = torch.cat((action, state_latent), dim=-1)
         x = self.hidden(x)
         return x
@@ -71,6 +81,7 @@ class MlpICMModel(ICMModel):
     def __init__(self, state_converter: Converter, action_converter: Converter):
         assert len(state_converter.shape) == 1, 'Only flat spaces supported by MLP model'
         assert len(action_converter.shape) == 1, 'Only flat action spaces supported by MLP model'
+        self.state_converter = state_converter
         super().__init__(state_converter, action_converter)
         self.encoder = nn.Sequential(
             nn.Linear(state_converter.shape[0], 128),
@@ -87,6 +98,9 @@ class MlpICMModel(ICMModel):
         return False
     
     def forward(self, state: Tensor, next_state: Tensor, action: Tensor):
+        # print("state.shape", state.shape)
+        state = state.reshape(state.shape[0], -1)
+        next_state = next_state.reshape(next_state.shape[0], -1)
         state = self.encoder(state)
         next_state = self.encoder(next_state)
         # future states predicted by ForwardModel 

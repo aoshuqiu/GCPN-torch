@@ -16,7 +16,7 @@ class Agent:
     """
 
     def __init__(self, env: MultiEnv, model_factory: ModelFactory, curiosity_factory: CuriosityFactory,
-                 normalize_state: bool, normalize_reward:bool, reporter: Reporter = NoReporter()) -> None:
+                 normalize_state: bool, normalize_reward:bool, reporter: Reporter = NoReporter(), writer = None) -> None:
         self.env = env
         self.reporter = reporter
         self.state_converter = Converter.for_space(self.env.observation_space)
@@ -29,6 +29,7 @@ class Agent:
         self.device: torch.device = None
         self.dtype: torch.dtype = None
         self.numpy_dtype: object = None
+        self.writer = writer
 
     def act(self, state: np.ndarray) -> np.ndarray:
         """
@@ -75,10 +76,12 @@ class Agent:
             self.state_normalizer.partial_fit(s)
 
         for epoch in range(epochs):
-            states, actions, rewards, dones = Runner(self.env, self).run(n_steps, render)
+            states, actions, rewards, dones = Runner(self.env, self, writer=self.writer).run(n_steps, render)
             # debug:
             # print("action.dtype: ", actions.dtype)
             # input()
+            # print("actions.shape: ", actions.shape)
+            # print("states.shape: ", states.shape)
             states = self.state_normalizer.partial_fit_transform(states)
             rewards = self.curiosity.reward(rewards, states, actions)
             rewards = self.reward_normalizer.partial_fit_transform(rewards)

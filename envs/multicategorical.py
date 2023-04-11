@@ -11,7 +11,7 @@ class MultiCategorical(Distribution):
         self.device = logits.device
         batch_shape = self._param.size()[:-1] if self._param.ndimension()>1 else torch.Size()
         self.logits_list = self.logits.split(self.split_list, dim=-1)
-        super().__init__(batch_shape)
+        super().__init__(batch_shape, validate_args=validate_args)
 
     def sample(self, sample_shape=torch.Size()):
         tensor_list = []
@@ -30,9 +30,6 @@ class MultiCategorical(Distribution):
             cnt+=1
             value = value.squeeze(-1)
             logp += Categorical(logits=logit).log_prob(value)
-            if((Categorical(logits=logit).log_prob(value) <= -1e5).any()):
-                print("have one !!!!!!!!!!!!!!!!!")
-                assert cnt == 2
                 
         return logp
     

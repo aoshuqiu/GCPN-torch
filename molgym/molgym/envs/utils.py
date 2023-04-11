@@ -3,6 +3,7 @@ import os
 import re
 import copy
 import itertools
+from contextlib import contextmanager
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMolDescriptors
@@ -377,3 +378,12 @@ def load_scaffold():
             Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE) #单双键恢复成芳香键
         print('num of scaffolds:', len(data)) #脚手架数量
         return data
+    
+@contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
