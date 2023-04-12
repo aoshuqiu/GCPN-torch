@@ -3,7 +3,7 @@ from typing import Dict
 from rdkit import Chem
 
 class Vocab:
-    def __init__(self, vocab_set, vocab_count_dict: Dict[str, int]):
+    def __init__(self, vocab_set):
         self.vocab_list = []
         for mol_smiles in vocab_set:
             mol = Chem.MolFromSmiles(mol_smiles)
@@ -20,7 +20,6 @@ class Vocab:
         print(self.vocab_list)
         self.vmap = {x: i for i, x in enumerate(self.vocab_list)}
         self.length = len(self.vocab_list)
-        self.vocab_count_dict = vocab_count_dict
         # if one_hot_perpare:
 
     def get_vocab_idx(self, vocab):
@@ -45,7 +44,7 @@ class Vocab:
                 print(strs)
                 vocab_set.add(strs[0])
                 dic[strs[0]] = int(strs[1])
-        return Vocab(vocab_set, dic)
+        return Vocab(vocab_set), dic
     
     @staticmethod
     def get_main_struct(file_path):

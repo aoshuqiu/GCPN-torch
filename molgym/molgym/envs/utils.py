@@ -5,6 +5,7 @@ import copy
 import itertools
 from contextlib import contextmanager
 
+import torch
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMolDescriptors
 from rdkit.Chem.Descriptors import MolLogP, qed
@@ -387,3 +388,7 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
+
+def get_item(tensor):
+    if(torch.is_tensor(tensor)): return tensor.item()
+    else: return tensor

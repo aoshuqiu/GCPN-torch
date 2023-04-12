@@ -18,7 +18,7 @@ if __name__ == '__main__':
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_test_writer.csv')
+    writer = MolecularWriter('molecule_gen/molcule_no_curi.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     agent = MolPPO(MultiEnv('molecule-v0', 3, reporter),
@@ -27,12 +27,12 @@ if __name__ == '__main__':
                    normalize_state=False,
                    normalize_reward=True,
                    model_factory=GCPN.factory(),
-                   #curiosity_factory=NoCuriosity.factory(),
-                   curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
-                            intrinsic_reward_integration=0.01, reporter=reporter),
+                   curiosity_factory=NoCuriosity.factory(),
+                #    curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
+                #             intrinsic_reward_integration=0.01, reporter=reporter),
                    reward=GeneralizedRewardEstimation(gamma=1,lam=0.95),
                    advantage=GeneralizedAdvantageEstimation(gamma=1, lam=0.95),
-                   learning_rate=1e-3,
+                   learning_rate=5e-4,
                    clip_range=0.2,
                    v_clip_range=0.2,
                    c_entropy=1e-2,
@@ -43,4 +43,4 @@ if __name__ == '__main__':
                    normalize_advantage=True
                   )
     agent.to(torch.device('cuda:0'), torch.float32, np.float32)
-    agent.learn(epochs=1000, n_steps=256)
+    agent.learn(epochs=2000, n_steps=256)

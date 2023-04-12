@@ -45,55 +45,17 @@ class MolPPO(Agent):
         self.n_optimization_epochs = n_optimization_epochs
         self.clip_grad_norm = clip_grad_norm
         self.normalize_advantage = normalize_advantage
-        self.optimizer = Adam(chain(self.model.parameters(), self.curiosity.parameters()), learning_rate)
+        self.optimizer = Adam(chain(self.model.parameters(), self.curiosity.parameters()), learning_rate, eps=1e-5)
         self.loss = PPOLoss(clip_range, v_clip_range, c_entropy, c_value, reporter)
+        self.scheduler = None
 
     def _train(self, states: np.ndarray, actions: np.ndarray, rewards: np.ndarray, dones: np.ndarray):
         _, policy_old, values_old = self.model(self._to_tensor(self.state_converter.reshape_as_input(states,
                                                                                                   self.model.recurrent)))
-        # print("states after: ",self.state_converter.reshape_as_input(states,self.model.recurrent).shape)
-        # print("actions: ",ac_old.shape)
-        # def np_to_dict(obarray):
-        #     """
-        #     Turn numpy observation to origin dict.
+        if not self.scheduler:
+            # linearly decrease learning rate factor from 1 to 0 over total epochs
+            self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=1, end_factor=0, total_iters=self.epochs)
 
-        #     :param obarray: numpy: d_e * N * (N + F)
-        #     :return: Molecule observation. Contains:
-        #             'adj': d_e * N * N --- d_e for edge type num. 
-        #                                     N for max atom num.
-        #             'node': 1 * N * F --- F for atom features num.
-        #     """
-        #     nodenum = obarray.shape[1]
-        #     oblist = np.split(obarray,[nodenum],-1)
-        #     # debug
-        #     # print(oblist[0].shape)
-        #     adj = oblist[0][:,:,:]
-        #     node = oblist[1][0]
-        #     node = np.expand_dims(node,0)
-        #     ob = {}
-        #     ob["adj"] = adj
-        #     ob["node"] = node
-        #     return ob
-        # # ----------------------
-        # print("ac_old: ",ac_old.shape)
-        # print("state: ",states.shape)
-        # for i in range(policy_old.shape[0]):
-        #     state_ob = np_to_dict(states[0][i]) 
-        #     ob_len = GCPN.get_ob_len(torch.tensor(state_ob["node"], device=self.device))
-        #     for j in range(0, ob_len-9):
-        #         assert policy_old[i][j]>-1e5 , f'policyold in state{i} not ok state: {state_ob["node"] } policy: {policy_old[i]} j: {j}'
-
-        # for i in range(policy_old.shape[0]):
-        #     assert policy_old[i][int((ac_old[i][0]).item())] > -1e5, f'ac_old{i} not ok'
-
-        # for i in range(policy_old.shape[0]):
-        #     state_ob = np_to_dict(states[0][i]) 
-        #     assert ac_old[i][0] <= GCPN.get_ob_len(torch.tensor(state_ob["node"], device=self.device)), f'{i} not ok'
-
-        # for i in range(policy_old.shape[0]-1):
-        #     state_ob = np_to_dict(states[0][i]) 
-        #     assert actions[0][i][0] <= GCPN.get_ob_len(torch.tensor(state_ob["node"], device=self.device)), f'actions[{i}] not ok'
-        # #-----------------------
         policy_old = policy_old.detach().view(*states.shape[:2], -1)
         values_old = values_old.detach().view(*states.shape[:2])
         values_old_numpy = values_old.cpu().detach().numpy()
@@ -133,6 +95,8 @@ class MolPPO(Agent):
                 loss.backward(retain_graph=True)
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
+        # Decrease learning rate factor every epoch
+        self.scheduler.step()
 
     def act(self, state: np.ndarray) -> np.ndarray:
         # debug

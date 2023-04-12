@@ -30,6 +30,11 @@ class MultiCategorical(Distribution):
             cnt+=1
             value = value.squeeze(-1)
             logp += Categorical(logits=logit).log_prob(value)
+            # if torch.any(logp <= -20):
+            #     print(f"logp<=-5 due to action[{cnt}]")
+            #     for l, v in zip(logit, value):
+            #         print("logit: ", l[int(v.item())])
+            #     input()
                 
         return logp
     

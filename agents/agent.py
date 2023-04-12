@@ -70,11 +70,10 @@ class Agent:
                initialization of the state normalizer, defaults to 1000
         :param render: whether to render the environment during learning, defaults to False
         """
-
+        self.epochs = epochs
         if initialization_steps and self.normalize_state:
             s, _, _, _ = RandomRunner(self.env).run(initialization_steps)
             self.state_normalizer.partial_fit(s)
-
         for epoch in range(epochs):
             states, actions, rewards, dones = Runner(self.env, self, writer=self.writer).run(n_steps, render)
             # debug:

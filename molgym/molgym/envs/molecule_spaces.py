@@ -110,3 +110,28 @@ class MolecularActionTupleSpace(Space):
     
     def __eq__(self, other) -> bool:
         return np.array_equal(self.shape, other.shape)
+
+class FragmentActionTupleSpace(Space):
+    def __init__(self, max_atom_num, possible_atom_num, edge_type_num, max_motif_atoms_num, vocab_size):
+        self.max_atom_num = max_atom_num
+        self.edge_type_num = edge_type_num
+        self.possible_atom_num = possible_atom_num
+        self._shape = (4,)
+        self.dtype = np.int32
+        self.max_motif_atoms_num = max_motif_atoms_num
+        self.vocab_size = vocab_size
+
+    def sample(self) -> Tuple[int,int,int,int]:
+        """
+        Sample a random action from the space.
+        :return: a random action.
+                 0: whether to stop.
+                 1: choose a node from the current graph.
+                 2: choose the other node to add an edge from the whole graph.
+                 3: choose the edge type between the two nodes.
+        """
+        return (np.random.randint(2), 
+                np.random.randint(self.vocab_size), 
+                np.random.randint(self.max_motif_atoms_num), 
+                np.random.randint(self.max_atom_num),
+                np.random.randint(self.edge_type_num))

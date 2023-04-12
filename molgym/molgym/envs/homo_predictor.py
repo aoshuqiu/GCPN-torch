@@ -61,10 +61,11 @@ class HomoPredictorFactory(PredictorFactory):
                  out_emb_channels=256, num_spherical=3, num_radial=6, envelope_exponent=5,
                  num_before_skip=1, num_after_skip=2, num_output_layers=3):
         super().__init__()
-        self.model = SphereNet(energy_and_force, cutoff, num_layers, hidden_channels, out_channels, 
-                               int_emb_size, basis_emb_size_dist, basis_emb_size_angle, basis_emb_size_torsion, 
-                               out_emb_channels, num_spherical, num_radial, envelope_exponent, num_before_skip, 
-                               num_after_skip, num_output_layers)
+        with torch.no_grad():
+            self.model = SphereNet(energy_and_force, cutoff, num_layers, hidden_channels, out_channels, 
+                                int_emb_size, basis_emb_size_dist, basis_emb_size_angle, basis_emb_size_torsion, 
+                                out_emb_channels, num_spherical, num_radial, envelope_exponent, num_before_skip, 
+                                num_after_skip, num_output_layers)
     
     def create(self, save_file_str, device=torch.device('cuda:1')) -> HomoPredictor:
         return HomoPredictor(self.model, device, save_file_str)
