@@ -22,12 +22,13 @@ class ActionConflictException(Exception):
 class MoleculeFragmentEnv(MoleculeEnv):
     def __init__(self):
         self.set_hyperparams()
-        self.criticmap = CriticMap()
+        self.criticmap = CriticMap().map
 
     def set_hyperparams(self,data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
-                        max_action=128,min_action=20,force_final=False,symmetric_action=False):
+                        max_action=128,min_action=20,force_final=False,symmetric_action=True,max_motif_atoms=20,
+                        max_atom=65, vocab_file_str="./molgym/molgym/dataset/share.txt", main_struct_file_str="./molgym/molgym/dataset/main_struct.txt"):
         
         super().set_hyperparams(data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
                                 reward_step_total=reward_step_total,is_normalize=is_normalize,reward_type=reward_type,
@@ -35,23 +36,22 @@ class MoleculeFragmentEnv(MoleculeEnv):
                                 is_conditional=is_conditional,conditional=conditional, max_action=max_action,
                                 min_action=min_action,force_final=force_final)
         print("MoleculeFragmentEnv")
+        cwd = os.path.dirname(__file__)
+        self.vocab, self.mof_dic = Vocab.get_cof_vocab(vocab_file_str)
+        self.main_struct = Vocab.get_main_struct(main_struct_file_str)
+        self.vocab_size = self.vocab.size()
+        self.max_motif_atoms=max_motif_atoms
+        self.max_atom = max_atom
         if symmetric_action:
             self.symmetric_action = symmetric_action
             self.symmetry = []
             self.end_points = [[],[]]
             self.last_motif = "C"
             self.last_connect = [0,0]
-            cwd = os.path.dirname(__file__)
-            self.vocab, self.mof_dic = Vocab.get_cof_vocab(os.path.join(os.path.dirname(cwd), 'dataset',
-                                    'share.txt'))
-            self.main_struct = Vocab.get_main_struct(os.path.join(os.path.dirname(cwd), 'dataset',
-                                    'main_struct.txt'))
-            self.vocab_size = self.vocab.size()
-            self.max_motif_atoms=20
-            self.max_atom = 65
-            # TODO dn   
-            self.action_space = FragmentActionTupleSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.max_motif_atoms, self.vocab_size)
-            self.observation_space = MolecularObDictSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.d_n)
+
+        # TODO dn   
+        self.action_space = FragmentActionTupleSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.max_motif_atoms, self.vocab_size)
+        self.observation_space = MolecularObDictSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.d_n)
 
     def step(self, action):
         ### init
@@ -83,12 +83,12 @@ class MoleculeFragmentEnv(MoleculeEnv):
             
             
         ### take action action 矩阵，每行四个元素，分别是动作的四个组成，之后的操作在加链路
-        if action[0,4]==0 or self.counter < self.min_action: # not stop
+        if action[4]==0 or self.counter < self.min_action: # not stop
             stop = False
-            motif = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[action[0,0]]))
+            motif = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[action[0]]))
             Chem.SanitizeMol(motif, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-            share_bonds = potential_to_share(self.mol, motif,action[0, 1], action[0, 2])
-            if action[0, 5]==0 or share_bonds is None:
+            share_bonds = potential_to_share(self.mol, motif,action[1], action[2])
+            if action[3]!=len(self.possible_bond_types) or share_bonds is None:
                 add_atom_num = self._add_motif(action)
             else:
                 add_atom_num = self._share_motif(action, share_bonds)
@@ -153,6 +153,74 @@ class MoleculeFragmentEnv(MoleculeEnv):
             self.counter = 0
         
         return ob, reward, new, info
+    
+    def get_observation(self):
+        """
+        ob['adj']:d_e*max_atom*max_atom --- 'E' 代表边类型的邻接矩阵
+        ob['node']:1*max_atom*d_n --- 'F' 1*原子类型*原子嵌入
+        n = atom_num + atom_type_num 原子数目+原子种类数
+        """
+        mol = copy.deepcopy(self.mol)
+        try:
+            Chem.SanitizeMol(mol)
+        except:
+            pass
+        n = mol.GetNumAtoms()
+        n_shift = len(self.possible_atom_types) # assume isolated nodes new nodes exist
+
+
+        F = np.zeros((1, self.max_atom, self.d_n))
+        for a in mol.GetAtoms():
+            atom_idx = a.GetIdx()
+            atom_symbol = a.GetSymbol()
+            # if self.has_feature:
+                # formal_charge = a.GetFormalCharge()
+                # implicit_valence = a.GetImplicitValence()
+                # ring_atom = a.IsInRing()
+                # degree = a.GetDegree()
+                # hybridization = a.GetHybridization()
+            # print(atom_symbol,formal_charge,implicit_valence,ring_atom,degree,hybridization)
+            if self.has_feature:
+                float_array = np.concatenate([(atom_symbol ==
+                                               self.possible_atom_types),
+                                              ([not a.IsInRing()]),
+                                              ([a.IsInRingSize(3)]),
+                                              ([a.IsInRingSize(4)]),
+                                              ([a.IsInRingSize(5)]),
+                                              ([a.IsInRingSize(6)]),
+                                              ([a.IsInRing() and (not a.IsInRingSize(3))
+                                               and (not a.IsInRingSize(4))
+                                               and (not a.IsInRingSize(5))
+                                               and (not a.IsInRingSize(6))]
+                                               )]).astype(float)
+            else:
+                float_array = (atom_symbol == self.possible_atom_types).astype(float)
+            # assert float_array.sum() == 6   # because there are 6 types of one
+            # print(float_array,float_array.sum())
+            # hot atom features
+            F[0, atom_idx, :] = float_array
+        d_e = len(self.possible_bond_types)
+        E = np.zeros((d_e, self.max_atom, self.max_atom))
+        for i in range(d_e):
+            E[i,:n+n_shift,:n+n_shift] = np.eye(n+n_shift)
+        for b in self.mol.GetBonds(): # self.mol, very important!! no aromatic
+            begin_idx = b.GetBeginAtomIdx()
+            end_idx = b.GetEndAtomIdx()
+            bond_type = b.GetBondType()
+            float_array = (bond_type == self.possible_bond_types).astype(float)
+            try:
+                assert float_array.sum() != 0
+            except:
+                print('error',bond_type)
+            E[:, begin_idx, end_idx] = float_array
+            E[:, end_idx, begin_idx] = float_array
+        ob = {}
+        if self.is_normalize:
+            E = MoleculeEnv.normalize_adj(E)
+        ob['adj'] = E
+        ob['node'] = F
+        ob = self.dict_to_np(ob)
+        return ob
 
     def reset(self,smile=None):
         '''
@@ -213,10 +281,10 @@ class MoleculeFragmentEnv(MoleculeEnv):
             return mol_1    
     # motif_idx, begin_atom_idx, end_atom_idx, bond_type
     def _add_motif(self, action):
-        motif_idx = action[0,0]
-        begin_atom_idx = action[0,1]
-        end_atom_idx = action[0,2]
-        bond_type = self.possible_bond_types[action[0,3]]
+        motif_idx = action[0]
+        begin_atom_idx = action[1]
+        end_atom_idx = action[2]
+        bond_type = self.possible_bond_types[action[3] if action[3]!=len(self.possible_bond_types) else 0]
         motif_mol1 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
         Chem.SanitizeMol(motif_mol1, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         motif_mol2 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
@@ -247,11 +315,11 @@ class MoleculeFragmentEnv(MoleculeEnv):
             return motif_mol1.GetNumAtoms()
         
     def _share_motif(self, action, share_bonds):
-        if(action[0, 5]!=1):
+        if(action[3]!=len(self.possible_bond_types)):
             raise ActionConflictException("action requires no share edges!", 0)
-        motif_idx = action[0,0]
-        begin_atom_idx = action[0,1]
-        end_atom_idx = action[0,2]
+        motif_idx = action[0]
+        begin_atom_idx = action[1]
+        end_atom_idx = action[2]
         motif_mol1 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
         Chem.SanitizeMol(motif_mol1, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         curnum = self.mol.GetNumAtoms()
@@ -318,7 +386,8 @@ class MoleculeFragmentEnv(MoleculeEnv):
         except Exception as e:
             return mol_1
     
-    def get_observation_mol(self,mol):
+    @staticmethod
+    def get_observation_mol(mol, env_context):
         """
         ob['adj']:d_e*n*n --- 'E' 代表边类型的邻接矩阵
         ob['node']:1*n*d_n --- 'F' 1*原子类型*原子嵌入
@@ -329,22 +398,33 @@ class MoleculeFragmentEnv(MoleculeEnv):
         except:
             pass
         n = mol.GetNumAtoms()
-
+        data_type = env_context["data_type"]
+        if data_type=='gdb':
+            possible_atoms = ['C', 'N', 'O', 'S', 'Cl'] # gdb 13
+        elif data_type=='zinc':
+            possible_atoms = ['C', 'N', 'O', 'S', 'P', 'F', 'I', 'Cl',
+                              'Br']
+        possible_bonds = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
+                          Chem.rdchem.BondType.TRIPLE] #, Chem.rdchem.BondType.AROMATIC (芳香键) 单键，双键，三键 smiles中是没有芳香键的
+        atom_type_num = len(possible_atoms)    # 可能加的原子的类型数
+        possible_atom_types = np.array(possible_atoms)
+        possible_bond_types = np.array(possible_bonds, dtype=object)
+        d_n = len(possible_atom_types)+6 if env_context["has_feature"] else len(possible_atom_types)
         #print("mol_atom_num   ", n)
-        F = np.zeros((1, self.max_motif_atoms, self.d_n))
+        F = np.zeros((1, env_context["max_motif_atoms"], d_n))
         for a in mol.GetAtoms():
             atom_idx = a.GetIdx()
             atom_symbol = a.GetSymbol()
-            if self.has_feature:
+            if env_context["has_feature"]:
                 formal_charge = a.GetFormalCharge()
                 implicit_valence = a.GetImplicitValence()
                 ring_atom = a.IsInRing()
                 degree = a.GetDegree()
                 hybridization = a.GetHybridization()
             # print(atom_symbol,formal_charge,implicit_valence,ring_atom,degree,hybridization)
-            if self.has_feature:
+            if env_context["has_feature"]:
                 float_array = np.concatenate([(atom_symbol ==
-                                               self.possible_atom_types),
+                                               possible_atom_types),
                                               ([not a.IsInRing()]),
                                               ([a.IsInRingSize(3)]),
                                               ([a.IsInRingSize(4)]),
@@ -356,18 +436,19 @@ class MoleculeFragmentEnv(MoleculeEnv):
                                                and (not a.IsInRingSize(6))]
                                                )]).astype(float)
             else:
-                float_array = (atom_symbol == self.possible_atom_types).astype(float)
+                float_array = (atom_symbol == possible_atom_types).astype(float)
             F[0, atom_idx, :] = float_array
 
-        d_e = len(self.possible_bond_types)
-        E = np.zeros((d_e, self.max_motif_atoms, self.max_motif_atoms))
+        d_e = len(possible_bond_types)
+        max_motif_atoms = env_context["max_motif_atoms"]
+        E = np.zeros((d_e, max_motif_atoms, max_motif_atoms))
         for i in range(d_e):
             E[i,:n,:n] = np.eye(n)
         for b in mol.GetBonds(): # mol, very important!! no aromatic
             begin_idx = b.GetBeginAtomIdx()
             end_idx = b.GetEndAtomIdx()
             bond_type = b.GetBondType()
-            float_array = (bond_type == self.possible_bond_types).astype(float)
+            float_array = (bond_type == possible_bond_types).astype(float)
             try:
                 assert float_array.sum() != 0
             except:
@@ -375,8 +456,8 @@ class MoleculeFragmentEnv(MoleculeEnv):
             E[:, begin_idx, end_idx] = float_array
             E[:, end_idx, begin_idx] = float_array
         ob = {}
-        if self.is_normalize:
-            E = self.normalize_adj(E)
+        if env_context["is_normalize"]:
+            E = MoleculeEnv.normalize_adj(E)
         ob['adj'] = E
         ob['node'] = F
         return ob

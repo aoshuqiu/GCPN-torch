@@ -17,11 +17,12 @@ class SubProcessEnv(Process):
     """
     DONE_IDX = 2
 
-    def __init__(self, env_id, master, slave):
+    def __init__(self, env_id, master, slave, context: Dict[str, Any]=None):
         super().__init__(daemon=True)
         self.master = master
         self.env_id = env_id
         self.pipe = slave
+        self.context = context
     
     def start(self) -> None:
         super().start()
@@ -30,6 +31,8 @@ class SubProcessEnv(Process):
     def run(self):
         self.master.close()
         env = make(self.env_id)
+        if self.context:
+            env.set_hyperparams(**self.context)
         steps = 0
         collected_reward = 0
         while True:
@@ -70,7 +73,7 @@ class MultiEnv(Env):
             ``done`` signal. It is remembered, but the environment immediately resets and continues starting new episode.
     """
 
-    def __init__(self, env_id, n_envs: int, reporter: Reporter = NoReporter()):
+    def __init__(self, env_id, n_envs: int, reporter: Reporter = NoReporter(), context: Dict[str, Any]=None):
         """
         
         :param env_id: name of the environment that ``gym.make`` will be called with
@@ -81,7 +84,7 @@ class MultiEnv(Env):
         self.env_id = env_id
         self.n_envs: int = n_envs
         self.reporter = reporter
-        self.processes = [SubProcessEnv(env_id, *Pipe()) for _ in range(self.n_envs)]
+        self.processes = [SubProcessEnv(env_id, *Pipe(), context) for _ in range(self.n_envs)]
         self._start()
         self.observation_space = self._get_property(self.processes[0], 'observation_space')
         self.action_space = self._get_property(self.processes[0], 'action_space')

@@ -137,7 +137,8 @@ class MoleculeEnv(gym.Env):
         np.random.seed(seed=seed)
         random.seed(seed)
 
-    def normalize_adj(self,adj):
+    @staticmethod
+    def normalize_adj(adj):
         """
         Change adjacency matrix to Normalized Laplace matrix for embeding.
 
@@ -419,7 +420,7 @@ class MoleculeEnv(gym.Env):
                 # print('edge',begin_idx,end_idx,bond_type)
                 # rw_mol.AddBond(begin_idx, end_idx, order=bond_type)
             if self.is_normalize:
-                ob['adj'][i] = self.normalize_adj(ob['adj'][i])
+                ob['adj'][i] = MoleculeEnv.normalize_adj(ob['adj'][i])
             # print('ob',Chem.MolToSmiles(rw_mol, isomericSmiles=True))
             # from rdkit.Chem import Draw
             # Draw.MolToFile(rw_mol, 'ob' + str(i) + '.png')
@@ -507,7 +508,7 @@ class MoleculeEnv(gym.Env):
             E[:, end_idx, begin_idx] = float_array
         ob = {}
         if self.is_normalize:
-            E = self.normalize_adj(E)
+            E = MoleculeEnv.normalize_adj(E)
         ob['adj'] = E
         ob['node'] = F
         ob = self.dict_to_np(ob)

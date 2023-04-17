@@ -7,7 +7,7 @@ from rdkit import RDLogger
 from reporters import TensorBoardReporter, MolecularWriter
 from agents import MolPPO
 from envs import MultiEnv
-from models import GCPN
+from models import GCPN, FragmentGCPN
 from curiosity import NoCuriosity, ICM, MlpICMModel
 from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 
@@ -18,12 +18,12 @@ if __name__ == '__main__':
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_no_curi_005.csv')
+    writer = MolecularWriter('molecule_gen/molcule_no_curi.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
         "data_type":'zinc',
-        "logp_ratio": 1, 
+        "logp_ratio":1,
         "qed_ratio":1,
         "sa_ratio":1,
         "reward_step_total":1,
@@ -36,24 +36,29 @@ if __name__ == '__main__':
         "conditional":'low',
         "max_action":128,
         "min_action":20,
-        "force_final":False
+        "force_final":False,
+        "symmetric_action":False,
+        "max_motif_atoms":20,
+        "max_atom":65,
+        "vocab_file_str":"./molgym/molgym/dataset/share.txt",
+        "main_struct_file_str":"./molgym/molgym/dataset/main_struct.txt"
+
     }
-    agent = MolPPO(MultiEnv('molecule-v0', 3, reporter, molenv_context),
+    agent = MolPPO(MultiEnv('molecule-v1', 1, reporter, molenv_context),
                    writer= writer,
                    reporter=reporter,
                    normalize_state=False,
                    normalize_reward=True,
-                   model_factory=GCPN.factory(),
-                #    curiosity_factory=NoCuriosity.factory(),
-                   curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
-                            intrinsic_reward_integration=0.01, reporter=reporter),
+                   model_factory=FragmentGCPN.factory(molenv_context),
+                   curiosity_factory=NoCuriosity.factory(),
+                #    curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
+                #             intrinsic_reward_integration=0.01, reporter=reporter),
                    reward=GeneralizedRewardEstimation(gamma=1,lam=0.95),
                    advantage=GeneralizedAdvantageEstimation(gamma=1, lam=0.95),
                    learning_rate=5e-4,
                    clip_range=0.2,
                    v_clip_range=0.2,
-                #    c_entropy=1e-2,
-                   c_entropy=0.05,
+                   c_entropy=1e-2,
                    c_value=0.5,
                    n_mini_batches=32,
                    n_optimization_epochs=8,
