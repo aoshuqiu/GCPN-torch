@@ -202,7 +202,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
         d_e = len(self.possible_bond_types)
         E = np.zeros((d_e, self.max_atom, self.max_atom))
         for i in range(d_e):
-            E[i,:n+n_shift,:n+n_shift] = np.eye(n+n_shift)
+            E[i,:n,:n] = np.eye(n)
         for b in self.mol.GetBonds(): # self.mol, very important!! no aromatic
             begin_idx = b.GetBeginAtomIdx()
             end_idx = b.GetEndAtomIdx()
