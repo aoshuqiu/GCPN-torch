@@ -391,4 +391,5 @@ def cd(newdir):
 
 def get_item(tensor):
     if(torch.is_tensor(tensor)): return tensor.item()
-    else: return tensor.item()
+    elif isinstance(tensor, np.int64): return tensor.item()
+    else: return tensor

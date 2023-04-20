@@ -1,17 +1,21 @@
 import os
 import copy
 import random
+import subprocess
 
 import torch
 import gym
 from rdkit import Chem
+from rdkit.Chem import AllChem, Draw
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdmolfiles import MolToSmiles, MolToXYZFile
 import numpy as np
 
 from molgym.envs.molecule import MoleculeEnv
 from molgym.envs.critic import CriticMap
 from molgym.envs.vocab import Vocab
 from molgym.envs.molecule_spaces import FragmentActionTupleSpace, MolecularObDictSpace
-from molgym.envs.utils import get_item, convert_radical_electrons_to_hydrogens
+from molgym.envs.utils import get_item, convert_radical_electrons_to_hydrogens, cd
 
 class ActionConflictException(Exception):
     def __init__(self, message, status):
@@ -21,16 +25,19 @@ class ActionConflictException(Exception):
 
 class MoleculeFragmentEnv(MoleculeEnv):
     def __init__(self):
-        self.set_hyperparams()
-        self.criticmap = CriticMap().map
+        pass
 
-    def set_hyperparams(self,data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
+    def set_hyperparams(self, device=torch.device('cpu'), data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
                         max_action=128,min_action=20,force_final=False,symmetric_action=True,max_motif_atoms=20,
-                        max_atom=65, vocab_file_str="./molgym/molgym/dataset/share.txt", main_struct_file_str="./molgym/molgym/dataset/main_struct.txt"):
+                        max_atom=65, vocab_file_str="./molgym/molgym/dataset/share.txt", 
+                        main_struct_file_str="./molgym/molgym/dataset/main_struct.txt",
+                        zeoplusplus_path="/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
+                        frameworks_gen_path="/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
+                        imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs"):
         
-        super().set_hyperparams(data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
+        super().set_hyperparams(device=device,data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
                                 reward_step_total=reward_step_total,is_normalize=is_normalize,reward_type=reward_type,
                                 reward_target=reward_target,has_scaffold=has_scaffold,has_feature=has_feature,
                                 is_conditional=is_conditional,conditional=conditional, max_action=max_action,
@@ -42,8 +49,17 @@ class MoleculeFragmentEnv(MoleculeEnv):
         self.vocab_size = self.vocab.size()
         self.max_motif_atoms=max_motif_atoms
         self.max_atom = max_atom
-        if symmetric_action:
-            self.symmetric_action = symmetric_action
+        self.zeoplusplus_path = zeoplusplus_path
+        self.frameworks_gen_path = frameworks_gen_path
+        self.imgs_path = imgs_path
+        self.symmetric_action = symmetric_action
+        self.criticmap = CriticMap(self.device).map
+        if(not os.path.exists(self.frameworks_gen_path)):
+            os.mkdir(self.frameworks_gen_path)
+        if(not os.path.exists(self.imgs_path)):
+            os.mkdir(self.imgs_path)
+
+        if self.symmetric_action:
             self.symmetry = []
             self.end_points = [[],[]]
             self.last_motif = "C"
@@ -114,13 +130,20 @@ class MoleculeFragmentEnv(MoleculeEnv):
         ### calculate terminal rewards
         if self.fit_terminate_condition(stop) or self.force_final:
             reward_valid_func = self.criticmap['valid']
-            reward_final_func = self.criticmap[self.reward_type]
-
             final_mol = convert_radical_electrons_to_hydrogens(self.mol)
             final_mol = Chem.MolFromSmiles(Chem.MolToSmiles(final_mol, isomericSmiles=True))
             reward_valid = reward_valid_func(final_mol)
             try:
-                reward_final = reward_final_func(final_mol)
+                if self.reward_type == "homo":
+                    reward_cof, singleton = self.generate_framework(self.mol, 
+                                                                    self.end_points,
+                                                                    self.last_connect)
+                    if singleton != None: self.mol = singleton
+                    reward_final = reward_cof
+                    self.symmetry=[]
+                else:
+                    reward_final_func = self.criticmap[self.reward_type]
+                    reward_final = reward_final_func(final_mol)
             except Exception as ex:
                 print(f"reward error : {ex}, {type(ex)}")
                 reward_final = 0
@@ -153,6 +176,101 @@ class MoleculeFragmentEnv(MoleculeEnv):
             self.counter = 0
         
         return ob, reward, new, info
+    
+    def generate_framework(self, final_mol, end_points, last_connect):
+        final_mol = Chem.RWMol(final_mol)
+        mol_copy = copy.deepcopy(final_mol)
+        Chem.SanitizeMol(final_mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+        mol_len = len(final_mol.GetAtoms())
+        mols = []
+        slist = []
+        max_sa = -1e10
+        max_flat = -1e10
+        max_mol = final_mol
+        flat_mol = None
+        def distance_last_connect(mol, end_1, end_2, idx):
+            end_1 = get_item(end_1)
+            end_2 = get_item(end_2)
+            idx = get_item(idx)
+            return min(len(Chem.rdmolops.GetShortestPath(mol, end_1, idx)),len(Chem.rdmolops.GetShortestPath(mol, end_2, idx)))
+
+        for i in range(len(end_points[0])):
+            try:
+                mol_copy = copy.deepcopy(final_mol)
+                mol_copy.AddAtom(Chem.Atom("Br"))
+                mol_copy.AddAtom(Chem.Atom("Br"))
+                mol_copy.AddBond(end_points[0][i], mol_len, order=Chem.rdchem.BondType.SINGLE)
+                mol_copy.AddBond(end_points[1][i], mol_len+1, order=Chem.rdchem.BondType.SINGLE)
+                Chem.SanitizeMol(mol_copy, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+                if(distance_last_connect(mol_copy, last_connect[0], last_connect[1], end_points[0][i])>max_sa):
+                    max_mol = mol_copy
+                    max_sa = max(max_sa,distance_last_connect(mol_copy, last_connect[0], last_connect[1], end_points[0][i]))
+            except Exception as e:
+                print("block exception: " + str(e))
+                print(self.end_points)
+                print(mol_len)
+                continue
+            
+        if(max_sa==-1e10 and max_flat==-1e10): return 0, None
+        final_mol = flat_mol if flat_mol else max_mol
+
+        # remove non-flat molecular:
+        pbf_mol = copy.deepcopy(final_mol)
+        AllChem.EmbedMolecule(pbf_mol, useRandomCoords=True)
+        if(rdMolDescriptors.CalcPBF(pbf_mol)>0.1): return 0, None
+        print(Chem.MolToSmiles(final_mol))
+        try:
+            smiles = MolToSmiles(final_mol)
+            final_mol = Chem.MolFromSmiles(smiles)
+            final_mol = Chem.AddHs(final_mol)
+            Chem.SanitizeMol(final_mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+            AllChem.EmbedMolecule(final_mol, useRandomCoords=True)
+            AllChem.MMFFOptimizeMolecule(final_mol)
+        except Exception as e:
+            print(e)
+            return 0, None
+        MolToXYZFile(final_mol,"myby.xyz")
+        cwd_path = os.getcwd()
+        with cd(self.frameworks_gen_path):
+            command = [self.zeoplusplus_path+"molecule_to_abstract",
+                cwd_path+"/myby.xyz","1",
+                cwd_path+"/myby_1.xyz"]
+            res = subprocess.run(command)
+            if res.returncode != 0:
+                return 0 ,None
+            command = [self.zeoplusplus_path+"framework_builder", 
+                    self.zeoplusplus_path+"nets/hcb.cgd", "1", 
+                    smiles, self.zeoplusplus_path+"builder_examples/building_blocks/N3_1.xyz", 
+                    cwd_path+"/myby_1.xyz", "3.5"]
+            res = subprocess.run(command)
+            command = [self.zeoplusplus_path+"network", 
+                    "-cif", "./"+smiles+"_framework.cssr"]
+            res = subprocess.run(command)
+            def try_remove(file_str):
+                try:
+                    os.remove(file_str)
+                except:
+                    pass
+            try_remove(cwd_path+"/myby.xyz")
+            try_remove(cwd_path+"/myby_1.xyz")
+            try_remove("./"+smiles+"_net_full_edges.vtk")
+            try_remove("./"+smiles+"_net_full_vertices.xyz")
+            try_remove("./"+smiles+"_net_unit_cell.vtk")
+            try_remove("./"+smiles+"_ratio.txt")
+            try_remove("./"+smiles+"_framework.vtk")
+            try_remove("./"+smiles+"_framework_labeled.cssr")
+            try_remove("./"+smiles+"_framework.cssr")
+            if res.returncode != 0:
+                return -1, None
+        critic = self.criticmap["homo"]
+        reward = critic(self.frameworks_gen_path+"/"+smiles+"_framework.xyz")
+        draw = Draw.MolToImage(final_mol)
+        draw.save(self.imgs_path+"/"+smiles+"_"+str(-reward)+".jpg")
+        with cd(self.frameworks_gen_path):
+            os.rename("./"+smiles+"_framework.xyz", "./"+smiles+"_framework_"+str(-reward)+".xyz")
+            os.rename("./"+smiles+"_framework.cif", "./"+smiles+"_framework_"+str(-reward)+".cif")
+        final_mol = flat_mol if flat_mol else max_mol
+        return reward, final_mol
     
     def get_observation(self):
         """
@@ -242,11 +360,22 @@ class MoleculeFragmentEnv(MoleculeEnv):
                     break
             self.mol = vocab_mol
             self.symmetry = copy.deepcopy(symmetry_list)
+            end_points = [[],[]]
+            for atom1, atom2 in enumerate(symmetry_list):
+                if atom1 not in end_points[0] and atom1 not in end_points[1]:
+                    end_points[0].append(atom1)
+                    end_points[1].append(atom2)
+
+            self.end_points = end_points
+            self.last_motif = smiles
+            self.last_connect = [0,self.symmetry[0]]
+
             Chem.SanitizeMol(self.mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
             # self._add_atom(np.random.randint(len(self.possible_atom_types)))  # random add one atom
         self.smile_list= [self.get_final_smiles()]
         self.counter = 0
         ob = self.get_observation()
+        
         return ob
     
     def _connect_motifs(self, mol_1, mol_2, begin_atom_idx,

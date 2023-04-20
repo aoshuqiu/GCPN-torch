@@ -38,10 +38,8 @@ class Vocab:
         dic = {}
         with open(file_path) as f:
             for line in f:
-                print(line)
                 line = line.strip()
                 strs = line.split(' ')
-                print(strs)
                 vocab_set.add(strs[0])
                 dic[strs[0]] = int(strs[1])
         return Vocab(vocab_set), dic

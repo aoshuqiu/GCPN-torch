@@ -14,11 +14,12 @@ from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 
 if __name__ == '__main__':
     torch.set_num_threads(3)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.multiprocessing.set_start_method('spawn')
+    device = torch.device('cuda:0')
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_no_curi_005.csv')
+    writer = MolecularWriter('molecule_gen/molcule.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -36,7 +37,8 @@ if __name__ == '__main__':
         "conditional":'low',
         "max_action":128,
         "min_action":20,
-        "force_final":False
+        "force_final":False,
+        "device": device
     }
     agent = MolPPO(MultiEnv('molecule-v0', 3, reporter, molenv_context),
                    writer= writer,
@@ -60,5 +62,5 @@ if __name__ == '__main__':
                    clip_grad_norm=0.5,
                    normalize_advantage=True
                   )
-    agent.to(torch.device('cuda:0'), torch.float32, np.float32)
+    agent.to(device, torch.float32, np.float32)
     agent.learn(epochs=2000, n_steps=256)

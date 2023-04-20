@@ -67,6 +67,6 @@ class HomoPredictorFactory(PredictorFactory):
                                 out_emb_channels, num_spherical, num_radial, envelope_exponent, num_before_skip, 
                                 num_after_skip, num_output_layers)
     
-    def create(self, save_file_str, device=torch.device('cuda:1')) -> HomoPredictor:
+    def create(self, save_file_str, device) -> HomoPredictor:
         return HomoPredictor(self.model, device, save_file_str)
         

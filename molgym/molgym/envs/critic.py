@@ -11,13 +11,13 @@ from molgym.envs.utils import sa_reward, reward_target_new
 from molgym.envs.utils import reward_target_qed, reward_valid
 
 class CriticMap:
-    def __init__(self, reward_target=0):
+    def __init__(self, device,reward_target=0):
         """
         :param reward_target: target reward for target optimization, defaults to 0
         """
 
         self.map = {}
-        homo_critic = HomoPredictor.factory().create("./save_mean2.pt",torch.device('cuda:0'))
+        homo_critic = HomoPredictor.factory().create("./save_mean2.pt",device)
         logppen_critic = func_combine([reward_penalized_log_p],[1/3])
         qed_critic = func_combine([qed],[2])
         qedsa_critic = func_combine([qed, sa_reward],[1.5, 0.5])

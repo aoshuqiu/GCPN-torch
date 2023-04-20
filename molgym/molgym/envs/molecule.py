@@ -4,9 +4,11 @@ import random
 
 import numpy as np
 from rdkit import Chem
+from rdkit import RDLogger
 import gym
 from gym.spaces import MultiDiscrete,Discrete
 import networkx as nx
+import torch
 
 from molgym.envs.utils import load_conditional, load_scaffold, convert_radical_electrons_to_hydrogens
 from molgym.envs.dataset_utils import gdb_dataset, mol_to_nx
@@ -17,10 +19,10 @@ class MoleculeEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
     def __init__(self):
-        self.set_hyperparams()
-        self.criticmap = CriticMap().map
+        RDLogger.DisableLog('rdApp.*')
+        pass
 
-    def set_hyperparams(self,data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
+    def set_hyperparams(self, device=torch.device('cpu'), data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
                         max_action=128,min_action=20,force_final=False):
@@ -47,12 +49,14 @@ class MoleculeEnv(gym.Env):
         :param force_final: Just feedback final reward (final molecule performance), defaults to False
         :param generate_unit: atom or fragment for generate unit.
         """
+        self.device = device
         self.is_normalize = bool(is_normalize)
         self.is_conditional = is_conditional
         self.has_feature = has_feature
         self.reward_type = reward_type
         self.reward_target = reward_target
         self.force_final = force_final
+        self.criticmap = CriticMap(self.device).map
         self.conditional_list = load_conditional(conditional)
         self.smile_list = []
         if data_type=='gdb':
