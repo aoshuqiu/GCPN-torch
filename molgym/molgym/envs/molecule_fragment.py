@@ -31,11 +31,11 @@ class MoleculeFragmentEnv(MoleculeEnv):
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
                         max_action=128,min_action=20,force_final=False,symmetric_action=True,max_motif_atoms=20,
-                        max_atom=65, vocab_file_str="./molgym/molgym/dataset/share.txt", 
+                        max_atom=65, vocab_file_strs=["./molgym/molgym/dataset/share.txt",], 
                         main_struct_file_str="./molgym/molgym/dataset/main_struct.txt",
                         zeoplusplus_path="/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
                         frameworks_gen_path="/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
-                        imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs"):
+                        imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs", thresholds=None):
         
         super().set_hyperparams(device=device,data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
                                 reward_step_total=reward_step_total,is_normalize=is_normalize,reward_type=reward_type,
@@ -44,22 +44,25 @@ class MoleculeFragmentEnv(MoleculeEnv):
                                 min_action=min_action,force_final=force_final)
         print("MoleculeFragmentEnv")
         cwd = os.path.dirname(__file__)
-        self.vocab, self.mof_dic = Vocab.get_cof_vocab(vocab_file_str)
-        self.main_struct = Vocab.get_main_struct(main_struct_file_str)
+        self.symmetric_action = symmetric_action
+        if self.symmetric_action:
+            self.vocab, self.mof_dic = Vocab.get_cof_vocab(vocab_file_strs)
+            self.main_struct = Vocab.get_main_struct(main_struct_file_str)
+        else:
+            self.vocab = Vocab.get_vocab_by_counter(vocab_file_strs,thresholds)
         self.vocab_size = self.vocab.size()
         self.max_motif_atoms=max_motif_atoms
         self.max_atom = max_atom
-        self.zeoplusplus_path = zeoplusplus_path
-        self.frameworks_gen_path = frameworks_gen_path
-        self.imgs_path = imgs_path
-        self.symmetric_action = symmetric_action
         self.criticmap = CriticMap(self.device).map
-        if(not os.path.exists(self.frameworks_gen_path)):
-            os.mkdir(self.frameworks_gen_path)
-        if(not os.path.exists(self.imgs_path)):
-            os.mkdir(self.imgs_path)
 
         if self.symmetric_action:
+            if(not os.path.exists(self.frameworks_gen_path)):
+                os.mkdir(self.frameworks_gen_path)
+            if(not os.path.exists(self.imgs_path)):
+                os.mkdir(self.imgs_path)
+            self.zeoplusplus_path = zeoplusplus_path
+            self.frameworks_gen_path = frameworks_gen_path
+            self.imgs_path = imgs_path
             self.symmetry = []
             self.end_points = [[],[]]
             self.last_motif = "C"
@@ -73,11 +76,12 @@ class MoleculeFragmentEnv(MoleculeEnv):
         ### init
         info = {}  # info we care about
         self.mol_old = copy.deepcopy(self.mol) # keep old mol
-        self.symmetry_old = copy.deepcopy(self.symmetry)
-        self.motif_old = copy.deepcopy(self.last_motif)
-        self.connect_old = copy.deepcopy(self.last_connect)
-        self.end_points_old = copy.deepcopy(self.end_points)
         total_atoms = self.mol.GetNumAtoms()
+        if self.symmetric_action:
+            self.symmetry_old = copy.deepcopy(self.symmetry)
+            self.motif_old = copy.deepcopy(self.last_motif)
+            self.connect_old = copy.deepcopy(self.last_connect)
+            self.end_points_old = copy.deepcopy(self.end_points)
 
         add_atom_num = 1
 
@@ -101,14 +105,16 @@ class MoleculeFragmentEnv(MoleculeEnv):
         ### take action action 矩阵，每行四个元素，分别是动作的四个组成，之后的操作在加链路
         if action[4]==0 or self.counter < self.min_action: # not stop
             stop = False
-            motif = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[action[0]]))
-            Chem.SanitizeMol(motif, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-            share_bonds = potential_to_share(self.mol, motif,action[1], action[2])
-            if action[3]!=len(self.possible_bond_types) or share_bonds is None:
-                add_atom_num = self._add_motif(action)
+            if self.symmetric_action:
+                motif = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[action[0]]))
+                Chem.SanitizeMol(motif, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+                share_bonds = potential_to_share(self.mol, motif,action[1], action[2])
+                if action[3]!=len(self.possible_bond_types) or share_bonds is None:
+                    add_atom_num = self._add_motif(action)
+                else:
+                    add_atom_num = self._share_motif(action, share_bonds)
             else:
-                add_atom_num = self._share_motif(action, share_bonds)
-
+                add_atom_num = self._add_motif(action)
         else: # stop
             stop = True
 
@@ -122,10 +128,11 @@ class MoleculeFragmentEnv(MoleculeEnv):
         else:
             reward_step = -self.reward_step_total/self.max_atom  # invalid action
             self.mol = self.mol_old
-            self.symmetry = self.symmetry_old
-            self.last_connect = self.connect_old
-            self.last_motif = self.motif_old
-            self.end_points = self.end_points_old
+            if self.symmetric_action:
+                self.symmetry = self.symmetry_old
+                self.last_connect = self.connect_old
+                self.last_motif = self.motif_old
+                self.end_points = self.end_points_old
 
         ### calculate terminal rewards
         if self.fit_terminate_condition(stop) or self.force_final:
@@ -353,23 +360,30 @@ class MoleculeFragmentEnv(MoleculeEnv):
             self.mol = Chem.RWMol(Chem.MolFromSmiles(smile))
             Chem.SanitizeMol(self.mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         else:
-            while True:
-                smiles, symmetry_list = random.choice(list(self.main_struct.items()))
-                vocab_mol = Chem.MolFromSmiles(smiles)
-                if vocab_mol:
-                    break
-            self.mol = vocab_mol
-            self.symmetry = copy.deepcopy(symmetry_list)
-            end_points = [[],[]]
-            for atom1, atom2 in enumerate(symmetry_list):
-                if atom1 not in end_points[0] and atom1 not in end_points[1]:
-                    end_points[0].append(atom1)
-                    end_points[1].append(atom2)
-
-            self.end_points = end_points
-            self.last_motif = smiles
-            self.last_connect = [0,self.symmetry[0]]
-
+            if self.symmetric_action:
+                while True:
+                    smiles, symmetry_list = random.choice(list(self.main_struct.items()))
+                    vocab_mol = Chem.MolFromSmiles(smiles)
+                    if vocab_mol:
+                        break
+                self.mol = vocab_mol
+                self.symmetry = copy.deepcopy(symmetry_list)
+                end_points = [[],[]]
+                for atom1, atom2 in enumerate(symmetry_list):
+                    if atom1 not in end_points[0] and atom1 not in end_points[1]:
+                        end_points[0].append(atom1)
+                        end_points[1].append(atom2)
+                self.end_points = end_points
+                self.last_motif = smiles
+                self.last_connect = [0,self.symmetry[0]]
+            
+            else:
+                while True:
+                    smiles = random.choice(self.vocab.vocab_list)
+                    vocab_mol = Chem.MolFromSmiles(smiles)
+                    if vocab_mol:
+                        break
+                self.mol = vocab_mol
             Chem.SanitizeMol(self.mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
             # self._add_atom(np.random.randint(len(self.possible_atom_types)))  # random add one atom
         self.smile_list= [self.get_final_smiles()]
@@ -410,38 +424,48 @@ class MoleculeFragmentEnv(MoleculeEnv):
             return mol_1    
     # motif_idx, begin_atom_idx, end_atom_idx, bond_type
     def _add_motif(self, action):
-        motif_idx = action[0]
-        begin_atom_idx = action[1]
-        end_atom_idx = action[2]
-        bond_type = self.possible_bond_types[action[3] if action[3]!=len(self.possible_bond_types) else 0]
-        motif_mol1 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
-        Chem.SanitizeMol(motif_mol1, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-        motif_mol2 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
-        Chem.SanitizeMol(motif_mol2,sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-        curnum = self.mol.GetNumAtoms()
-        old_mol = copy.deepcopy(self.mol)
-        self.mol =  self._connect_motifs(Chem.RWMol(self.mol), motif_mol1, begin_atom_idx, end_atom_idx, bond_type)
-        newnum = self.mol.GetNumAtoms()
-        if self.mol.GetNumAtoms()==curnum:
-            return 0
-        else:
-            self.mol =  self._connect_motifs(Chem.RWMol(self.mol), motif_mol2, self.symmetry[begin_atom_idx], end_atom_idx, bond_type)
-            if(self.mol.GetNumAtoms()==newnum):
-                self.mol = old_mol
+        if self.symmetric_action:
+            motif_idx = action[0]
+            begin_atom_idx = action[1]
+            end_atom_idx = action[2]
+            bond_type = self.possible_bond_types[action[3] if action[3]!=len(self.possible_bond_types) else 0]
+            motif_mol1 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
+            Chem.SanitizeMol(motif_mol1, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+            motif_mol2 = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
+            Chem.SanitizeMol(motif_mol2,sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+            curnum = self.mol.GetNumAtoms()
+            old_mol = copy.deepcopy(self.mol)
+            self.mol =  self._connect_motifs(Chem.RWMol(self.mol), motif_mol1, begin_atom_idx, end_atom_idx, bond_type)
+            newnum = self.mol.GetNumAtoms()
+            if self.mol.GetNumAtoms()==curnum:
                 return 0
-            symmetry_tail = []
-            self.end_points = [[],[]]
-            self.last_motif = self.vocab.vocab_list[motif_idx]
-            for atom in motif_mol1.GetAtoms():
-                atom_idx1 = atom.GetIdx()+curnum
-                atom_idx2 = atom_idx1+motif_mol1.GetNumAtoms()
-                self.symmetry.append(atom_idx2)
-                symmetry_tail.append(atom_idx1)
-                self.end_points[0].append(atom_idx1)
-                self.end_points[1].append(atom_idx2)
-            self.symmetry.extend(symmetry_tail)
-            self.last_connect = [end_atom_idx+curnum, self.symmetry[end_atom_idx+curnum]]
-            return motif_mol1.GetNumAtoms()
+            else:
+                self.mol =  self._connect_motifs(Chem.RWMol(self.mol), motif_mol2, self.symmetry[begin_atom_idx], end_atom_idx, bond_type)
+                if(self.mol.GetNumAtoms()==newnum):
+                    self.mol = old_mol
+                    return 0
+                symmetry_tail = []
+                self.end_points = [[],[]]
+                self.last_motif = self.vocab.vocab_list[motif_idx]
+                for atom in motif_mol1.GetAtoms():
+                    atom_idx1 = atom.GetIdx()+curnum
+                    atom_idx2 = atom_idx1+motif_mol1.GetNumAtoms()
+                    self.symmetry.append(atom_idx2)
+                    symmetry_tail.append(atom_idx1)
+                    self.end_points[0].append(atom_idx1)
+                    self.end_points[1].append(atom_idx2)
+                self.symmetry.extend(symmetry_tail)
+                self.last_connect = [end_atom_idx+curnum, self.symmetry[end_atom_idx+curnum]]
+                return motif_mol1.GetNumAtoms()
+        else:
+            motif_idx = action[0]
+            begin_atom_idx = action[1]
+            end_atom_idx = action[2]
+            bond_type = self.possible_bond_types[action[3]] if action[3] < 3 else self.possible_bond_types[0]
+            motif_mol = Chem.RWMol(Chem.MolFromSmiles(self.vocab.vocab_list[motif_idx]))
+            Chem.SanitizeMol(motif_mol,sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+            self.mol =  self._connect_motifs(Chem.RWMol(self.mol), motif_mol, begin_atom_idx, end_atom_idx, bond_type)
+            return motif_mol.GetNumAtoms()
         
     def _share_motif(self, action, share_bonds):
         if(action[3]!=len(self.possible_bond_types)):

@@ -3,6 +3,7 @@ from torch import nn
 from torch import distributions as D
 from torch import functional as F
 from rdkit import Chem
+import numpy as np
 
 from models.model import Model, ModelFactory
 from models.gcn import GCN
@@ -34,7 +35,10 @@ class FragmentGCPN(GCPN):
             nn.Tanh()
         )
         self.context = context
-        self.vocab,_ = Vocab.get_cof_vocab(context["vocab_file_str"])
+        if context["symmetric_action"]:
+            self.vocab,_ = Vocab.get_cof_vocab(context["vocab_file_strs"])
+        else:
+            self.vocab = Vocab.get_vocab_by_counter(context["vocab_file_strs"], context["thresholds"])
         self.policy_stop_out = nn.Linear(out_channels, 2)
         vocab_size = self.vocab.size()
 
@@ -189,9 +193,9 @@ class FragmentGCPN(GCPN):
 
             motif_emb = torch.sum(motif_emb,1)
             motif_wholeembs.append(motif_emb.detach().cpu().numpy())
-        motif_wholeembs = torch.tensor(motif_wholeembs, device=device, dtype=torch.float)
-        motif_sembs = torch.tensor(motif_sembs, device=device, dtype=torch.float)
-        motif_nodes = torch.tensor(motif_nodes, device=device, dtype=torch.float)
+        motif_wholeembs = torch.tensor(np.array(motif_wholeembs), device=device, dtype=torch.float)
+        motif_sembs = torch.tensor(np.array(motif_sembs), device=device, dtype=torch.float)
+        motif_nodes = torch.tensor(np.array(motif_nodes), device=device, dtype=torch.float)
         return motif_wholeembs, motif_sembs, motif_nodes
     
     @staticmethod

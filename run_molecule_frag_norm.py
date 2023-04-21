@@ -19,7 +19,7 @@ if __name__ == '__main__':
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_no_curi.csv')
+    writer = MolecularWriter('molecule_gen/molcule_frag_norm.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         "sa_ratio":1,
         "reward_step_total":1,
         "is_normalize":0,
-        "reward_type":'homo',
+        "reward_type":'qed',
         "reward_target":0.5,
         "has_scaffold":False,
         "has_feature":False,
@@ -38,10 +38,11 @@ if __name__ == '__main__':
         "max_action":128,
         "min_action":20,
         "force_final":False,
-        "symmetric_action":True,
+        "symmetric_action":False,
         "max_motif_atoms":20,
         "max_atom":65,
-        "vocab_file_strs":["./molgym/molgym/dataset/share.txt",],
+        "vocab_file_strs":["./molgym/molgym/dataset/fragment_counter.txt","./molgym/molgym/dataset/ring_counter.txt"],
+        "thresholds":[500, 50],
         "main_struct_file_str":"./molgym/molgym/dataset/main_struct.txt",
         "zeoplusplus_path":"/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
         "frameworks_gen_path":"/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
