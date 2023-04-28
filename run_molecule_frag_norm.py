@@ -73,7 +73,8 @@ if __name__ == '__main__':
                    n_optimization_epochs=8,
                    clip_grad_norm=0.5,
                    normalize_advantage=False,
-                   lr_linear_decay=False
+                   lr_linear_decay=False,
+                   clip_grad=False,
                   )
     for i, str in enumerate(agent.model.vocab.vocab_list):
         assert(agent.model.vocab.vocab_list[i]==env._get_property(env.processes[0],"vocab").vocab_list[i])

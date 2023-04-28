@@ -18,7 +18,7 @@ class MolPPO(Agent):
                  reward: Reward, advantage: Advantage, learning_rate: float, clip_range: float, v_clip_range: float,
                  c_entropy: float, c_value: float, n_mini_batches: int, n_optimization_epochs: int,
                  clip_grad_norm: float, normalize_state: bool, normalize_reward: bool, normalize_advantage: bool,
-                 reporter: Reporter = NoReporter(), lr_linear_decay=True) -> None:
+                 reporter: Reporter = NoReporter(), lr_linear_decay=True, clip_grad=True) -> None:
         """
         :param env: environment to train on
         :param model_factory: factory to construct the model used as the brain of the agent
@@ -49,6 +49,7 @@ class MolPPO(Agent):
         self.loss = PPOLoss(clip_range, v_clip_range, c_entropy, c_value, reporter)
         self.scheduler = None
         self.lr_linear_decay = lr_linear_decay
+        self.clip_grad = clip_grad
 
     def _train(self, states: np.ndarray, actions: np.ndarray, rewards: np.ndarray, dones: np.ndarray):
         _, policy_old, values_old = self.model(self._to_tensor(self.state_converter.reshape_as_input(states,
@@ -96,8 +97,8 @@ class MolPPO(Agent):
                 self.optimizer.zero_grad()
                 # loss = loss * 0.2
                 loss.backward(retain_graph=True)
-                #TODO 去了梯度clip
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
+                if self.clip_grad:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
         # Decrease learning rate factor every epoch
         if self.scheduler:

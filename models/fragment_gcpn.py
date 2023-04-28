@@ -17,9 +17,9 @@ from molgym.envs import MoleculeFragmentEnv
 class FragmentGCPN(GCPN):
 
     #TODO need to pass vocab and context from factory create() method
-    def __init__(self, state_space: Converter, action_space: Converter, out_channels=64,
+    def __init__(self, state_space: Converter, action_space: Converter, out_channels=128,
                  in_channels=9, edge_type=3, atom_type_num=0, stop_shift=-3, max_atom=50, 
-                 context = None) -> None:
+                 **context) -> None:
         super().__init__(state_space, action_space, out_channels, in_channels, edge_type, atom_type_num, stop_shift, max_atom)
         self.emb = nn.Linear(in_channels, 8)
         self.gcn1 = GCN(8, out_channels, 3)
@@ -208,4 +208,4 @@ class FragmentGCPNFactory(ModelFactory):
         self.context = context
 
     def create(self, state_space: Converter, action_space: Converter):
-        return FragmentGCPN(state_space,action_space, context=self.context)
+        return FragmentGCPN(state_space,action_space, **self.context)
