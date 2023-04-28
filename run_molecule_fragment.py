@@ -46,7 +46,8 @@ if __name__ == '__main__':
         "zeoplusplus_path":"/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
         "frameworks_gen_path":"/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
         "imgs_path":"/home/bachelor/zhangjinhang/molRL/molppo/imgs",
-        "device":device
+        "device":device,
+        "capture_logs":True
     }
     agent = MolPPO(MultiEnv('molecule-v1', 1, reporter, molenv_context),
                    writer= writer,
@@ -59,7 +60,7 @@ if __name__ == '__main__':
                 #             intrinsic_reward_integration=0.01, reporter=reporter),
                    reward=GeneralizedRewardEstimation(gamma=1,lam=0.95),
                    advantage=GeneralizedAdvantageEstimation(gamma=1, lam=0.95),
-                   learning_rate=5e-4,
+                   learning_rate=3e-4,
                    clip_range=0.2,
                    v_clip_range=0.2,
                 #    c_entropy=1e-2,
@@ -70,5 +71,6 @@ if __name__ == '__main__':
                    clip_grad_norm=0.5,
                    normalize_advantage=True
                   )
+    
     agent.to(device, torch.float32, np.float32)
     agent.learn(epochs=2000, n_steps=256)

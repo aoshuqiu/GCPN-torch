@@ -101,7 +101,8 @@ class PPOLoss(_Loss):
         self.reporter.scalar('ppo_loss/entropy', -entropy.item())
         self.reporter.scalar('ppo_loss/value_loss', value_loss.item())   
         self.reporter.scalar('ppo_loss/total', total_loss)
-        return total_loss                         
+        # return total_loss
+        return total_loss, policy_loss                 
 
 class PPO(Agent):
     """

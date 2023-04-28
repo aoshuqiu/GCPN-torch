@@ -17,8 +17,8 @@ from molgym.envs import MoleculeFragmentEnv
 class FragmentGCPN(GCPN):
 
     #TODO need to pass vocab and context from factory create() method
-    def __init__(self, state_space: Converter, action_space: Converter, out_channels=128,
-                 in_channels=9, edge_type=3, atom_type_num=9, stop_shift=-3, max_atom=65, 
+    def __init__(self, state_space: Converter, action_space: Converter, out_channels=64,
+                 in_channels=9, edge_type=3, atom_type_num=0, stop_shift=-3, max_atom=50, 
                  context = None) -> None:
         super().__init__(state_space, action_space, out_channels, in_channels, edge_type, atom_type_num, stop_shift, max_atom)
         self.emb = nn.Linear(in_channels, 8)
@@ -105,7 +105,7 @@ class FragmentGCPN(GCPN):
         pd_motif = D.Categorical(logits=policy_motif)
         ac_motif = pd_motif.sample() #(B,1)
         ac_motif = ac_motif.unsqueeze(-1) #(B)
-
+        
         motif_embs, motif_sembs, motif_nodes = self.get_motif_embs(ac_motif)
 
         emb_first_cat = torch.cat((motif_embs.expand(emb_node.shape), emb_node), -1)
@@ -185,7 +185,7 @@ class FragmentGCPN(GCPN):
             motif_obnode = self.emb(motif_node)
             motif_emb = tanh(self.gcn1(torch.matmul(motif_adj, motif_obnode)))
             motif_emb = tanh(self.gcn2(torch.matmul(motif_adj, motif_emb)))
-            motif_emb = self.gcn3(torch.matmul(motif_adj, motif_emb))
+            motif_emb = tanh(self.gcn3(torch.matmul(motif_adj, motif_emb)))
             motif_emb = motif_emb.squeeze(0)
 
             motif_sinemb = motif_emb.squeeze(0) #(n,f)

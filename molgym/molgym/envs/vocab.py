@@ -3,11 +3,11 @@ from typing import Dict, List
 from rdkit import Chem
 
 class Vocab:
-    def __init__(self, vocab_list):
+    def __init__(self, vocab_list, atom_num_limit=7):
         self.vocab_list = []
         for mol_smiles in vocab_list:
             mol = Chem.MolFromSmiles(mol_smiles)
-            if mol and mol.GetNumAtoms()<=15:
+            if mol and mol.GetNumAtoms()<atom_num_limit:
                 try:
                     Chem.SanitizeMol(mol,sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
                     for a in mol.GetAtoms():
@@ -16,6 +16,7 @@ class Vocab:
                             break
                 except:
                     continue
+        self.vocab_list.sort(key=lambda x: len(x), reverse=True)
         self.vmap = {x: i for i, x in enumerate(self.vocab_list)}
         self.length = len(self.vocab_list)
         # if one_hot_perpare:

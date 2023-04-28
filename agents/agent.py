@@ -101,6 +101,7 @@ class Agent:
         self.dtype = dtype
         self.numpy_dtype = numpy_dtype
         self.model.to(device, dtype)
+        # self.model = self.model.cuda()
         self.curiosity.to(device, dtype)
         self.env.astype(numpy_dtype)
 

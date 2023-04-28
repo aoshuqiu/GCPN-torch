@@ -1,5 +1,6 @@
 import os
 import copy
+import time
 import random
 import subprocess
 
@@ -8,6 +9,7 @@ import gym
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 from rdkit.Chem import rdMolDescriptors
+from rdkit import RDLogger
 from rdkit.Chem.rdmolfiles import MolToSmiles, MolToXYZFile
 import numpy as np
 
@@ -25,25 +27,28 @@ class ActionConflictException(Exception):
 
 class MoleculeFragmentEnv(MoleculeEnv):
     def __init__(self):
+        RDLogger.DisableLog('rdApp.*')
         pass
 
     def set_hyperparams(self, device=torch.device('cpu'), data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
-                        max_action=128,min_action=20,force_final=False,symmetric_action=True,max_motif_atoms=20,
+                        max_action=128,min_action=5,force_final=False,symmetric_action=True,max_motif_atoms=20,
                         max_atom=65, vocab_file_strs=["./molgym/molgym/dataset/share.txt",], 
                         main_struct_file_str="./molgym/molgym/dataset/main_struct.txt",
                         zeoplusplus_path="/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
                         frameworks_gen_path="/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
-                        imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs", thresholds=None):
+                        imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs", thresholds=None,
+                        capture_logs=False, valid_coeff=1.0, **kwargs):
         
         super().set_hyperparams(device=device,data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
                                 reward_step_total=reward_step_total,is_normalize=is_normalize,reward_type=reward_type,
                                 reward_target=reward_target,has_scaffold=has_scaffold,has_feature=has_feature,
                                 is_conditional=is_conditional,conditional=conditional, max_action=max_action,
-                                min_action=min_action,force_final=force_final)
+                                min_action=min_action,force_final=force_final, valid_coeff=valid_coeff)
         print("MoleculeFragmentEnv")
         cwd = os.path.dirname(__file__)
+        self.capture_logs = capture_logs
         self.symmetric_action = symmetric_action
         if self.symmetric_action:
             self.vocab, self.mof_dic = Vocab.get_cof_vocab(vocab_file_strs)
@@ -54,15 +59,17 @@ class MoleculeFragmentEnv(MoleculeEnv):
         self.max_motif_atoms=max_motif_atoms
         self.max_atom = max_atom
         self.criticmap = CriticMap(self.device).map
+        # debug
+        print("vocab_size: ", self.vocab_size)
 
         if self.symmetric_action:
+            self.frameworks_gen_path = frameworks_gen_path
+            self.imgs_path = imgs_path
             if(not os.path.exists(self.frameworks_gen_path)):
                 os.mkdir(self.frameworks_gen_path)
             if(not os.path.exists(self.imgs_path)):
                 os.mkdir(self.imgs_path)
             self.zeoplusplus_path = zeoplusplus_path
-            self.frameworks_gen_path = frameworks_gen_path
-            self.imgs_path = imgs_path
             self.symmetry = []
             self.end_points = [[],[]]
             self.last_motif = "C"
@@ -92,7 +99,6 @@ class MoleculeFragmentEnv(MoleculeEnv):
                 if(bond.GetBondType()==Chem.rdchem.BondType.DOUBLE):
                     in_bond = bond.GetIdx()
                     break
-            
             for bond in motif.GetAtomWithIdx(get_item(out_atom_idx)).GetBonds():
                 if(bond.GetBondType()==Chem.rdchem.BondType.DOUBLE):
                     out_bond = bond.GetIdx()
@@ -159,7 +165,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
             if self.force_final:
                 reward = reward_final
             else:
-                reward = reward_step + reward_final + reward_valid
+                reward = reward_step + reward_final + self.valid_coeff * reward_valid
             
             info['smiles'] = self.get_final_smiles()
             if self.is_conditional:
@@ -185,6 +191,12 @@ class MoleculeFragmentEnv(MoleculeEnv):
         return ob, reward, new, info
     
     def generate_framework(self, final_mol, end_points, last_connect):
+        # TODO add logs by(pid+time).txt to capture subprocess output.
+        if self.capture_logs:
+            if not os.path.exists("./zeo++_logs"):
+                os.makedirs("./zeo++_logs")
+            process_log_str = f"./zeo++_logs/{os.getpid()}_{time.time()}.txt"
+            log_file = open(process_log_str, "w")
         final_mol = Chem.RWMol(final_mol)
         mol_copy = copy.deepcopy(final_mol)
         Chem.SanitizeMol(final_mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
@@ -213,9 +225,10 @@ class MoleculeFragmentEnv(MoleculeEnv):
                     max_mol = mol_copy
                     max_sa = max(max_sa,distance_last_connect(mol_copy, last_connect[0], last_connect[1], end_points[0][i]))
             except Exception as e:
-                print("block exception: " + str(e))
-                print(self.end_points)
-                print(mol_len)
+                # debug
+                # print("block exception: " + str(e))
+                # print(self.end_points)
+                # print(mol_len)
                 continue
             
         if(max_sa==-1e10 and max_flat==-1e10): return 0, None
@@ -234,7 +247,8 @@ class MoleculeFragmentEnv(MoleculeEnv):
             AllChem.EmbedMolecule(final_mol, useRandomCoords=True)
             AllChem.MMFFOptimizeMolecule(final_mol)
         except Exception as e:
-            print(e)
+            # debug
+            # print(e)
             return 0, None
         MolToXYZFile(final_mol,"myby.xyz")
         cwd_path = os.getcwd()
@@ -242,17 +256,20 @@ class MoleculeFragmentEnv(MoleculeEnv):
             command = [self.zeoplusplus_path+"molecule_to_abstract",
                 cwd_path+"/myby.xyz","1",
                 cwd_path+"/myby_1.xyz"]
-            res = subprocess.run(command)
+            res = subprocess.run(command) if not self.capture_logs else \
+                  subprocess.run(command, stdout=log_file, stderr=log_file)
             if res.returncode != 0:
                 return 0 ,None
             command = [self.zeoplusplus_path+"framework_builder", 
                     self.zeoplusplus_path+"nets/hcb.cgd", "1", 
                     smiles, self.zeoplusplus_path+"builder_examples/building_blocks/N3_1.xyz", 
                     cwd_path+"/myby_1.xyz", "3.5"]
-            res = subprocess.run(command)
+            res = subprocess.run(command) if not self.capture_logs else \
+                  subprocess.run(command, stdout=log_file, stderr=log_file)
             command = [self.zeoplusplus_path+"network", 
                     "-cif", "./"+smiles+"_framework.cssr"]
-            res = subprocess.run(command)
+            res = subprocess.run(command) if not self.capture_logs else \
+                  subprocess.run(command, stdout=log_file, stderr=log_file)
             def try_remove(file_str):
                 try:
                     os.remove(file_str)
@@ -411,14 +428,15 @@ class MoleculeFragmentEnv(MoleculeEnv):
         # check that we have an atom index from each substructure
         grouped_atom_indices_combined = Chem.GetMolFrags(rw_combined)
         substructure_1_indices, substructure_2_indices = grouped_atom_indices_combined
-        if(torch.is_tensor(begin_atom_idx)):begin_atom_idx = begin_atom_idx.item()
-        if(torch.is_tensor(end_atom_idx)):end_atom_idx = end_atom_idx.item()
+        begin_atom_idx = get_item(begin_atom_idx.item())
+        end_atom_idx = get_item(end_atom_idx)
         end_atom_idx = end_atom_idx + mol_1.GetNumAtoms()
         if begin_atom_idx in substructure_1_indices and end_atom_idx in substructure_2_indices:
             try:    
                 rw_combined.AddBond(begin_atom_idx, end_atom_idx, bond_type)
                 return rw_combined.GetMol()
             except Exception as e:
+                print("exception: ",e)
                 return mol_1
         else:
             return mol_1    

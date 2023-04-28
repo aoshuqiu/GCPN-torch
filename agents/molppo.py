@@ -18,7 +18,7 @@ class MolPPO(Agent):
                  reward: Reward, advantage: Advantage, learning_rate: float, clip_range: float, v_clip_range: float,
                  c_entropy: float, c_value: float, n_mini_batches: int, n_optimization_epochs: int,
                  clip_grad_norm: float, normalize_state: bool, normalize_reward: bool, normalize_advantage: bool,
-                 reporter: Reporter = NoReporter()) -> None:
+                 reporter: Reporter = NoReporter(), lr_linear_decay=True) -> None:
         """
         :param env: environment to train on
         :param model_factory: factory to construct the model used as the brain of the agent
@@ -48,12 +48,13 @@ class MolPPO(Agent):
         self.optimizer = Adam(chain(self.model.parameters(), self.curiosity.parameters()), learning_rate, eps=1e-5)
         self.loss = PPOLoss(clip_range, v_clip_range, c_entropy, c_value, reporter)
         self.scheduler = None
+        self.lr_linear_decay = lr_linear_decay
 
     def _train(self, states: np.ndarray, actions: np.ndarray, rewards: np.ndarray, dones: np.ndarray):
         _, policy_old, values_old = self.model(self._to_tensor(self.state_converter.reshape_as_input(states,
                                                                                                   self.model.recurrent)))
-        if not self.scheduler:
-            # linearly decrease learning rate factor from 1 to 0 over total epochs
+        if not self.scheduler and self.lr_linear_decay:
+        # linearly decrease learning rate factor from 1 to 0 over total epochs
             self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=1, end_factor=0, total_iters=self.epochs)
 
         policy_old = policy_old.detach().view(*states.shape[:2], -1)
@@ -88,15 +89,19 @@ class MolPPO(Agent):
                 # print("batch_policy_old: ", batch_policy_old)
                 # print("batch_actions: ", batch_actions)
 
-                loss: torch.Tensor = self.loss(distribution_old, batch_values_old, distribution, batch_values,
+                loss,surr_loss = self.loss(distribution_old, batch_values_old, distribution, batch_values,
                                             batch_actions, batch_rewards, batch_advantages)
                 loss = self.curiosity.loss(loss, batch_states, batch_next_states, batch_actions)
+                # if surr_loss>=0:
                 self.optimizer.zero_grad()
+                # loss = loss * 0.2
                 loss.backward(retain_graph=True)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
+                #TODO 去了梯度clip
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
         # Decrease learning rate factor every epoch
-        self.scheduler.step()
+        if self.scheduler:
+            self.scheduler.step()
 
     def act(self, state: np.ndarray) -> np.ndarray:
         # debug

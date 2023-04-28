@@ -25,7 +25,7 @@ class MoleculeEnv(gym.Env):
     def set_hyperparams(self, device=torch.device('cpu'), data_type='zinc',logp_ratio=1, qed_ratio=1,sa_ratio=1,
                         reward_step_total=1,is_normalize=0,reward_type='qed',reward_target=0.5,
                         has_scaffold=False,has_feature=False,is_conditional=False,conditional='low',
-                        max_action=128,min_action=20,force_final=False):
+                        max_action=128,min_action=20,force_final=False, valid_coeff=1.0):
         """
         Set huperparameters of the gym envs.
 
@@ -50,6 +50,7 @@ class MoleculeEnv(gym.Env):
         :param generate_unit: atom or fragment for generate unit.
         """
         self.device = device
+        self.valid_coeff = valid_coeff
         self.is_normalize = bool(is_normalize)
         self.is_conditional = is_conditional
         self.has_feature = has_feature
@@ -242,7 +243,7 @@ class MoleculeEnv(gym.Env):
             if self.force_final:
                 reward = reward_final
             else:
-                reward = reward_step + reward_final + reward_valid
+                reward = reward_step + reward_final + self.valid_coeff * reward_valid
             
             info['smiles'] = self.get_final_smiles()
             if self.is_conditional:
