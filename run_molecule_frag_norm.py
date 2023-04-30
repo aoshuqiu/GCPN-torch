@@ -80,4 +80,4 @@ if __name__ == '__main__':
         assert(agent.model.vocab.vocab_list[i]==env._get_property(env.processes[0],"vocab").vocab_list[i])
 
     agent.to(device, torch.float32, np.float32)
-    agent.learn(epochs=3000, n_steps=256)
+    agent.learn(epochs=2000, n_steps=256)
