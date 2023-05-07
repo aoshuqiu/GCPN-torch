@@ -15,7 +15,7 @@ from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 if __name__ == '__main__':
     torch.set_num_threads(3)
     torch.multiprocessing.set_start_method('spawn')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:2')
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         "force_final":False,
         "device": device
     }
-    agent = MolPPO(MultiEnv('molecule-v0', 3, reporter, molenv_context),
+    agent = MolPPO(MultiEnv('molecule-v0', 1, reporter, molenv_context),
                    writer= writer,
                    reporter=reporter,
                    normalize_state=False,
@@ -60,7 +60,8 @@ if __name__ == '__main__':
                    n_mini_batches=32,
                    n_optimization_epochs=8,
                    clip_grad_norm=0.5,
-                   normalize_advantage=True
+                   normalize_advantage=True,
+                   lr_linear_decay=False,
                   )
     agent.to(device, torch.float32, np.float32)
-    agent.learn(epochs=2000, n_steps=256)
+    agent.learn(epochs=3000, n_steps=256)

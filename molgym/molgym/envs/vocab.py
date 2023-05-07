@@ -53,8 +53,10 @@ class Vocab:
                     line = line.strip()
                     smiles, symmetry = line.split(' ')
                     lis = []
-                    for numstr in symmetry.split(','):
-                        lis.append(int(numstr))
+                    for cutstr in symmetry.split('|'):
+                        lis.append([])
+                        for numstr in cutstr.split(','):
+                            lis[-1].append(int(numstr)) 
                     main_struct[smiles] = lis
             except:
                 pass 

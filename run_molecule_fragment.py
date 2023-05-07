@@ -15,11 +15,11 @@ from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 if __name__ == '__main__':
     torch.set_num_threads(3)
     torch.multiprocessing.set_start_method('spawn')
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:2')
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_no_curi.csv')
+    writer = MolecularWriter('molecule_gen/molcule_cof_no_curi.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -36,18 +36,20 @@ if __name__ == '__main__':
         "is_conditional":False,
         "conditional":'low',
         "max_action":128,
-        "min_action":20,
+        "min_action":5,
         "force_final":False,
         "symmetric_action":True,
         "max_motif_atoms":20,
         "max_atom":65,
         "vocab_file_strs":["./molgym/molgym/dataset/share.txt",],
         "main_struct_file_str":"./molgym/molgym/dataset/main_struct.txt",
-        "zeoplusplus_path":"/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
-        "frameworks_gen_path":"/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
-        "imgs_path":"/home/bachelor/zhangjinhang/molRL/molppo/imgs",
+        "zeoplusplus_path":"/home/zhangjinhang/zeo++-0.3/",
+        "frameworks_gen_path":"/home/zhangjinhang/GCPN-torch/xyzs",
+        "imgs_path":"/home/zhangjinhang/GCPN-torch/imgs",
         "device":device,
-        "capture_logs":True
+        "capture_logs":True,
+        "out_channels": 64,
+        "symmetric_cnt": 2
     }
     agent = MolPPO(MultiEnv('molecule-v1', 1, reporter, molenv_context),
                    writer= writer,
@@ -60,17 +62,19 @@ if __name__ == '__main__':
                 #             intrinsic_reward_integration=0.01, reporter=reporter),
                    reward=GeneralizedRewardEstimation(gamma=1,lam=0.95),
                    advantage=GeneralizedAdvantageEstimation(gamma=1, lam=0.95),
-                   learning_rate=3e-4,
+                   learning_rate=2e-4,
                    clip_range=0.2,
                    v_clip_range=0.2,
                 #    c_entropy=1e-2,
-                   c_entropy=0.05,
-                   c_value=0.5,
+                   c_entropy=0.005,
+                   c_value=0.1,
                    n_mini_batches=32,
                    n_optimization_epochs=8,
                    clip_grad_norm=0.5,
-                   normalize_advantage=True
+                   normalize_advantage=True,
+                   lr_linear_decay=False,
+                   clip_grad=False,
                   )
     
     agent.to(device, torch.float32, np.float32)
-    agent.learn(epochs=2000, n_steps=256)
+    agent.learn(epochs=3000, n_steps=256)

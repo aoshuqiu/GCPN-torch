@@ -1,0 +1,20 @@
+SimulationType                MonteCarlo
+NumberOfCycles                1000
+NumberOfInitializationCycles  1000
+PrintEvery                    100
+RestartFile                   no
+
+Forcefield                    local
+UseChargesFromCIFFile         no
+CutOffVDW                     12.8
+
+Framework 0
+FrameworkName 1
+UnitCells 2 2 3
+ExternalTemperature 298.0
+
+Component 0 MoleculeName             helium
+            MoleculeDefinition       local
+            WidomProbability         1.0
+            CreateNumberOfMolecules  0
+

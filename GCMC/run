@@ -1,0 +1,5 @@
+#! /bin/sh -f
+export RASPA_DIR=/home/zhangjinhang/anaconda3/envs/molppo
+export DYLD_LIBRARY_PATH=${RASPA_DIR}/lib
+export LD_LIBRARY_PATH=${RASPA_DIR}/lib
+mpirun -np 16 $RASPA_DIR/bin/simulate $1
