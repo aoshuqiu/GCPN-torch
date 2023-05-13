@@ -1,6 +1,6 @@
 SimulationType                MonteCarlo
-NumberOfCycles                1000
-NumberOfInitializationCycles  1000
+NumberOfCycles                500
+NumberOfInitializationCycles  500
 PrintEvery                    100
 RestartFile                   no
 

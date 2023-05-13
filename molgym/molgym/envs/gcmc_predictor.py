@@ -2,7 +2,6 @@ import os
 import sys
 import subprocess
 
-
 class cd:
     """上下文管理器，用于改变当前的工作目录"""
     
@@ -26,7 +25,7 @@ def GCMCPredictor(cifname):
         path = gcmc_path + '/ans.txt'
         with open(path, 'r') as f:
             for line in f:
-                str = line
-    return str
+                raspa_str = line
+    return float(raspa_str)
 
 

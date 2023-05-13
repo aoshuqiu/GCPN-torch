@@ -6,6 +6,7 @@ from rdkit.Chem import rdMolDescriptors
 
 from molgym.envs.predictor import Predictor
 from molgym.envs.homo_predictor import HomoPredictor
+from molgym.envs.gcmc_predictor import GCMCPredictor
 from molgym.envs.utils import reward_penalized_log_p, func_combine
 from molgym.envs.utils import sa_reward, reward_target_new
 from molgym.envs.utils import reward_target_qed, reward_valid
@@ -28,6 +29,8 @@ class CriticMap:
         mw_target_critic = lambda mol: reward_target_new(mol, rdMolDescriptors.CalcExactMolWt,
                                                          x_start=self.reward_target, x_mid=self.reward_target+25)
         valid_critic = reward_valid
+        gcmc_predictor = GCMCPredictor
+        self.map['GCMC'] = gcmc_predictor
 
         self.map['homo'] = homo_critic
         self.map['logppen'] = logppen_critic

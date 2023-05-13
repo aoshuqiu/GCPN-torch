@@ -3,6 +3,7 @@ import copy
 import time
 import random
 import subprocess
+import shutil
 
 import torch
 import gym
@@ -12,6 +13,7 @@ from rdkit.Chem import rdMolDescriptors
 from rdkit import RDLogger
 from rdkit.Chem.rdmolfiles import MolToSmiles, MolToXYZFile
 import numpy as np
+
 
 from molgym.envs.molecule import MoleculeEnv
 from molgym.envs.critic import CriticMap
@@ -150,7 +152,16 @@ class MoleculeFragmentEnv(MoleculeEnv):
                 if self.reward_type == "homo":
                     reward_cof, singleton = self.generate_framework(self.mol, 
                                                                     self.end_points,
-                                                                    self.last_connect)
+                                                                    self.last_connect,
+                                                                    self.reward_type)
+                    if singleton != None: self.mol = singleton
+                    reward_final = reward_cof
+                    self.symmetry=[]
+                elif self.reward_type == "GCMC":
+                    reward_cof, singleton = self.generate_framework(self.mol,
+                                                                    self.end_points,
+                                                                    self.last_connect,
+                                                                    self.reward_type)
                     if singleton != None: self.mol = singleton
                     reward_final = reward_cof
                     self.symmetry=[]
@@ -190,7 +201,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
         
         return ob, reward, new, info
     
-    def generate_framework(self, final_mol, end_points, last_connect):
+    def generate_framework(self, final_mol, end_points, last_connect, reward_type):
         # TODO add logs by(pid+time).txt to capture subprocess output.
         if self.capture_logs:
             if not os.path.exists("./zeo++_logs"):
@@ -258,7 +269,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
             command = [self.zeoplusplus_path+"framework_builder", 
                     self.zeoplusplus_path+"nets/hcb.cgd", "1", 
                     smiles, self.zeoplusplus_path+"builder_examples/building_blocks/N3_1.xyz", 
-                    cwd_path+"/myby_1.xyz", "3.5"]
+                    cwd_path+"/myby_1.xyz", "7"]
             res = subprocess.run(command) if not self.capture_logs else \
                   subprocess.run(command, stdout=log_file, stderr=log_file)
             command = [self.zeoplusplus_path+"network", 
@@ -281,13 +292,18 @@ class MoleculeFragmentEnv(MoleculeEnv):
             try_remove("./"+smiles+"_framework.cssr")
             if res.returncode != 0:
                 return -1, None
-        critic = self.criticmap["homo"]
-        reward = critic(self.frameworks_gen_path+"/"+smiles+"_framework.xyz")
+        if reward_type == "homo":
+            critic = self.criticmap["homo"]
+            reward = critic(self.frameworks_gen_path+"/"+smiles+"_framework.xyz")
+            with cd(self.frameworks_gen_path):
+                os.rename("./"+smiles+"_framework.xyz", "./"+smiles+"_framework_"+str(-reward)+".xyz")
+                os.rename("./"+smiles+"_framework.cif", "./"+smiles+"_framework_"+str(-reward)+".cif")
+        elif reward_type == "GCMC":
+            shutil.move(self.frameworks_gen_path+"/"+smiles+"_framework.cif","/home/zhangjinhang/GCPN-torch/GCMC/"+smiles+"_framework.cif")
+            critic = self.criticmap["GCMC"]
+            reward = critic(smiles+"_framework")
         draw = Draw.MolToImage(final_mol)
         draw.save(self.imgs_path+"/"+smiles+"_"+str(-reward)+".jpg")
-        with cd(self.frameworks_gen_path):
-            os.rename("./"+smiles+"_framework.xyz", "./"+smiles+"_framework_"+str(-reward)+".xyz")
-            os.rename("./"+smiles+"_framework.cif", "./"+smiles+"_framework_"+str(-reward)+".cif")
         final_mol = flat_mol if flat_mol else max_mol
         return reward, final_mol
     

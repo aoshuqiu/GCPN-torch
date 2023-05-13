@@ -15,11 +15,11 @@ from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 if __name__ == '__main__':
     torch.set_num_threads(3)
     torch.multiprocessing.set_start_method('spawn')
-    device = torch.device('cuda:2')
+    device = torch.device('cuda:1')
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_cof_no_curi.csv')
+    writer = MolecularWriter('molecule_gen/molcule_cof_no_curi_gcmc.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         "sa_ratio":1,
         "reward_step_total":1,
         "is_normalize":0,
-        "reward_type":'homo',
+        "reward_type":'GCMC',
         "reward_target":0.5,
         "has_scaffold":False,
         "has_feature":False,
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                    n_mini_batches=32,
                    n_optimization_epochs=8,
                    clip_grad_norm=0.5,
-                   normalize_advantage=True,
+                   normalize_advantage=False,
                    lr_linear_decay=False,
                    clip_grad=False,
                   )

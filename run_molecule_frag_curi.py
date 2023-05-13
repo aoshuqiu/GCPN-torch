@@ -15,11 +15,11 @@ from rewards import GeneralizedAdvantageEstimation, GeneralizedRewardEstimation
 if __name__ == '__main__':
     torch.set_num_threads(3)
     torch.multiprocessing.set_start_method('spawn')
-    device = torch.device('cuda:2')
+    device = torch.device('cuda:1')
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_frag_curi_3k.csv')
+    writer = MolecularWriter('molecule_gen/molcule_frag_curi_3k_scale_01.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -59,8 +59,8 @@ if __name__ == '__main__':
                    normalize_reward=False,
                    model_factory=FragmentGCPN.factory(molenv_context),
                 #    curiosity_factory=NoCuriosity.factory(),
-                   curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=1, reward_scale=0.01, weight=0.2,
-                            intrinsic_reward_integration=0.01, reporter=reporter),
+                   curiosity_factory=ICM.factory(MlpICMModel.factory(), policy_weight=0.5, reward_scale=0.1, weight=0.2,
+                            intrinsic_reward_integration=0.5, reporter=reporter),
                    reward=GeneralizedRewardEstimation(gamma=1,lam=0.95),
                    advantage=GeneralizedAdvantageEstimation(gamma=1, lam=0.95),
                    learning_rate=2e-4,

@@ -40,7 +40,7 @@ if __name__ == '__main__':
         "force_final":False,
         "device": device
     }
-    agent = MolPPO(MultiEnv('molecule-v0', 1, reporter, molenv_context),
+    agent = MolPPO(MultiEnv('molecule-v0', 3, reporter, molenv_context),
                    writer= writer,
                    reporter=reporter,
                    normalize_state=False,
@@ -61,7 +61,6 @@ if __name__ == '__main__':
                    n_optimization_epochs=8,
                    clip_grad_norm=0.5,
                    normalize_advantage=True,
-                   lr_linear_decay=False,
                   )
     agent.to(device, torch.float32, np.float32)
     agent.learn(epochs=3000, n_steps=256)

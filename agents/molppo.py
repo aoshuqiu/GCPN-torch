@@ -18,7 +18,7 @@ class MolPPO(Agent):
                  reward: Reward, advantage: Advantage, learning_rate: float, clip_range: float, v_clip_range: float,
                  c_entropy: float, c_value: float, n_mini_batches: int, n_optimization_epochs: int,
                  clip_grad_norm: float, normalize_state: bool, normalize_reward: bool, normalize_advantage: bool,
-                 reporter: Reporter = NoReporter(), lr_linear_decay=True, clip_grad=True) -> None:
+                 reporter: Reporter = NoReporter(), lr_linear_decay=True, clip_grad=True, epoch_ex_start=0) -> None:
         """
         :param env: environment to train on
         :param model_factory: factory to construct the model used as the brain of the agent
@@ -38,7 +38,7 @@ class MolPPO(Agent):
         :param normalize_reward: whether to normalize rewards or not
         :param reporter: reporter to be used for reporting learning statistics, defaults to NoReporter()
         """
-        super().__init__(env, model_factory, curiosity_factory, normalize_state, normalize_reward, writer=writer)
+        super().__init__(env, model_factory, curiosity_factory, normalize_state, normalize_reward, writer=writer, epoch_ex_start=epoch_ex_start)
         self.reward = reward
         self.advantage = advantage
         self.n_mini_batched = n_mini_batches

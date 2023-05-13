@@ -16,7 +16,7 @@ class Agent:
     """
 
     def __init__(self, env: MultiEnv, model_factory: ModelFactory, curiosity_factory: CuriosityFactory,
-                 normalize_state: bool, normalize_reward:bool, reporter: Reporter = NoReporter(), writer = None) -> None:
+                 normalize_state: bool, normalize_reward:bool, reporter: Reporter = NoReporter(), writer = None, epoch_ex_start=0) -> None:
         self.env = env
         self.reporter = reporter
         self.state_converter = Converter.for_space(self.env.observation_space)
@@ -30,6 +30,7 @@ class Agent:
         self.dtype: torch.dtype = None
         self.numpy_dtype: object = None
         self.writer = writer
+        self.epoch_ex_start = epoch_ex_start
 
     def act(self, state: np.ndarray) -> np.ndarray:
         """
@@ -82,6 +83,7 @@ class Agent:
             # print("actions.shape: ", actions.shape)
             # print("states.shape: ", states.shape)
             states = self.state_normalizer.partial_fit_transform(states)
+            if(epoch<self.epoch_ex_start): rewards = np.zeros(rewards.shape)
             rewards = self.curiosity.reward(rewards, states, actions)
             rewards = self.reward_normalizer.partial_fit_transform(rewards)
             self._train(states, actions, rewards, dones)
