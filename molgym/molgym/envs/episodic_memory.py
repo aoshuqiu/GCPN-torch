@@ -1,0 +1,153 @@
+import numpy as np
+import csv
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit import Geometry
+from rdkit.Geometry import rdGeometry
+from rdkit.DataStructs import cDataStructs
+
+class EpisodicMemory(object):
+  """Episodic memory."""
+
+  def __init__(self,
+               replacement='fifo',
+               capacity=200):
+    """Creates an episodic memory.
+
+    Args:
+      observation_compare_fn: Function used to measure similarity between
+        two observations. This function returns the estimated probability that
+        two observations are similar.
+      replacement: String to select the behavior when a sample is added
+        to the memory when this one is full.
+        Can be one of: 'fifo', 'random'.
+        'fifo' keeps the last "capacity" samples into the memory.
+        'random' results in a geometric distribution of the age of the samples
+        present in the memory.
+      capacity: Capacity of the episodic memory.
+
+    Raises:
+      ValueError: when the replacement scheme is invalid.
+    """
+    self._capacity = capacity
+    self._replacement = replacement
+    if self._replacement not in ['fifo', 'random']:
+      raise ValueError('Invalid replacement scheme')
+    self.reset(False)
+
+  def reset(self, show_stats=True):
+    self._count = 0
+    # Stores environment observations.
+    self._obs_memory = [""] * self._capacity
+    # Stores the infos returned by the environment. For debugging and
+    # visualization purposes.
+    self._info_memory = [None] * self._capacity
+    self._memory_age = np.zeros([self._capacity], dtype=np.int32)
+
+  @property
+  def capacity(self):
+    return self._capacity
+
+  def __len__(self):
+    return min(self._count, self._capacity)
+
+  @property
+  def info_memory(self):
+    return self._info_memory
+
+  def add(self, observation, info):
+    """Adds an observation to the memory.
+
+    Args:
+      observation: Observation to add to the episodic memory.
+      info: Info returned by the environment together with the observation,
+            for debugging and visualization purposes.
+
+    Raises:
+      ValueError: when the capacity of the memory is exceeded.
+    """
+    if self._count >= self._capacity:
+      if self._replacement == 'random':
+        # By using random replacement, the age of elements inside the memory
+        # follows a geometric distribution (more fresh samples compared to
+        # old samples).
+        index = np.random.randint(low=0, high=self._capacity)
+      elif self._replacement == 'fifo':
+        # In this scheme, only the last self._capacity elements are kept.
+        # Samples are replaced using a FIFO scheme (implemented as a circular
+        # buffer).
+        index = self._count % self._capacity
+      else:
+        raise ValueError('Invalid replacement scheme')
+    else:
+      index = self._count
+
+    self._obs_memory[index] = observation
+    self._info_memory[index] = info
+    self._memory_age[index] = self._count
+    self._count += 1
+
+  def similarity(self, smiles):
+    """Similarity between the input observation and the ones from the memory.
+
+    Args:
+      observation: The input observation.
+
+    Returns:
+      A numpy array of similarities corresponding to the similarity between
+      the input and each of the element in the memory.
+    """
+    # Make the observation batched with batch_size = self._size before
+    # computing the similarities.
+    # TODO(damienv): could we avoid replicating the observation ?
+    # (with some form of broadcasting).
+    size = len(self)
+    cur_mol = Chem.MolFromSmiles(smiles)
+    sim_arr = []
+    for mol_smiles in self._obs_memory:
+        other_mol = Chem.MolFromSmiles(mol_smiles)
+        bv1 = AllChem.GetMorganFingerprintAsBitVect(cur_mol, 2, nBits=1024)
+        bv2 = AllChem.GetMorganFingerprintAsBitVect(other_mol, 2, nBits=1024)
+        sim_arr.append(cDataStructs.TanimotoSimilarity(bv1,bv2))
+    sim_arr = np.array(sim_arr)
+    return sim_arr
+
+
+def similarity_to_memory(observation,
+                         episodic_memory,
+                         similarity_aggregation='percentile'):
+  """Returns the similarity of the observation to the episodic memory.
+
+  Args:
+    observation: The observation the agent transitions to.
+    episodic_memory: Episodic memory.
+    similarity_aggregation: Aggregation method to turn the multiple
+        similarities to each observation in the memory into a scalar.
+
+  Returns:
+    A scalar corresponding to the similarity to episodic memory. This is
+    computed by aggregating the similarities between the new observation
+    and every observation in the memory, according to 'similarity_aggregation'.
+  """
+  # Computes the similarities between the current observation and the past
+  # observations in the memory.
+  memory_length = len(episodic_memory)
+  if memory_length == 0:
+    return 0.0
+  similarities = episodic_memory.similarity(observation)
+  # Implements different surrogate aggregated similarities.
+  # TODO(damienv): Implement other types of surrogate aggregated similarities.
+  if similarity_aggregation == 'max':
+    aggregated = np.max(similarities)
+  elif similarity_aggregation == 'nth_largest':
+    n = min(10, memory_length)
+    aggregated = np.partition(similarities, -n)[-n]
+  elif similarity_aggregation == 'percentile':
+    percentile = 90
+    aggregated = np.percentile(similarities, percentile)
+  elif similarity_aggregation == 'relative_count':
+    # Number of samples in the memory similar to the input observation.
+    count = sum(similarities > 0.5)
+    aggregated = float(count) / len(similarities)
+
+  return aggregated

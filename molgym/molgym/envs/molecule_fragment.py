@@ -20,6 +20,7 @@ from molgym.envs.critic import CriticMap
 from molgym.envs.vocab import Vocab
 from molgym.envs.molecule_spaces import FragmentActionTupleSpace, MolecularObDictSpace
 from molgym.envs.utils import get_item, convert_radical_electrons_to_hydrogens, cd
+from molgym.envs.episodic_memory import EpisodicMemory,similarity_to_memory
 
 class ActionConflictException(Exception):
     def __init__(self, message, status):
@@ -41,7 +42,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
                         zeoplusplus_path="/home/bachelor/zhangjinhang/molRL/zeo++-0.3/",
                         frameworks_gen_path="/home/bachelor/zhangjinhang/molRL/molppo/xyzs",
                         imgs_path="/home/bachelor/zhangjinhang/molRL/molppo/imgs", thresholds=None,
-                        capture_logs=False, valid_coeff=1.0, symmetric_cnt=2,**kwargs):
+                        capture_logs=False, valid_coeff=1.0, symmetric_cnt=2, use_memory=False,**kwargs):
         
         super().set_hyperparams(device=device,data_type=data_type,logp_ratio=logp_ratio, qed_ratio=qed_ratio,sa_ratio=sa_ratio,
                                 reward_step_total=reward_step_total,is_normalize=is_normalize,reward_type=reward_type,
@@ -81,6 +82,11 @@ class MoleculeFragmentEnv(MoleculeEnv):
         # TODO dn   
         self.action_space = FragmentActionTupleSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.max_motif_atoms, self.vocab_size)
         self.observation_space = MolecularObDictSpace(self.max_atom, len(self.possible_atom_types), len(self.possible_bond_types), self.d_n)
+        
+        self.episodic_memory = EpisodicMemory(replacement="random")
+        self.use_memory = use_memory
+        if(self.use_memory):
+            print("use_memory")
 
     def step(self, action):
         ### init
@@ -127,10 +133,13 @@ class MoleculeFragmentEnv(MoleculeEnv):
         else: # stop
             stop = True
 
+        reward_memory = 0
+
          ### calculate intermediate rewards 
         if self.check_valency(): 
             if self.mol.GetNumAtoms()+self.mol.GetNumBonds()-self.mol_old.GetNumAtoms()-self.mol_old.GetNumBonds()>0:
                 reward_step = self.reward_step_total/self.max_atom # successfully add node/edge
+                reward_memory = similarity_to_memory(self.get_final_smiles(), self.episodic_memory)
                 self.smile_list.append(self.get_final_smiles())
             else:
                 reward_step = -self.reward_step_total/self.max_atom # edge exist
@@ -195,8 +204,13 @@ class MoleculeFragmentEnv(MoleculeEnv):
         # get observation
         ob = self.get_observation()
 
+        if self.use_memory:
+            reward += 0.5*reward_memory
+
         self.counter += 1
         if new:
+            for smiles in self.smile_list:
+                self.episodic_memory.add(smiles, "")  
             self.counter = 0
         
         return ob, reward, new, info
