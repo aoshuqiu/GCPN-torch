@@ -2589,3 +2589,191 @@ WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
 WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
 
 
+[Init] Current cycle: 100 out of 500
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box: 179.21520 -89.46380   0.00000 [A]
+               0.00000 156.32013   0.00000 [A]
+               0.00000   0.00000  21.00000 [A]
+Box-lengths: 179.21520 180.11040  21.00000 Box-angles:   90.00000  90.00000 119.78300 [degrees]
+Volume: 588313.82655 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (O2), current number of integer/fractional/reaction molecules: 8/0/0, density:   0.72254 [kg/m^3]
+	absolute adsorption:   0.29630 [mol/uc],         0.1581 [mol/kg],              5.0601 [mg/g]
+	                                                 3.5444 [cm^3 STP/g],          0.5061 [cm^3 STP/cm^3]
+	excess adsorption:    -0.14372 [mol/uc],        -0.0767 [mol/kg],             -2.4544 [mg/g]
+	                                                -1.7192 [cm^3 STP/g],         -0.2455 [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 40 0 40 0
+Number of Framework-atoms:   5184
+Number of Adsorbates:           8 (8 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
+
+Current total potential energy:                -0.3075316432 [K]
+	Current Host-Host energy:                     0.0000000000 [K]
+	Current Host-Adsorbate energy:                0.0000000000 [K]
+	Current Host-Cation energy:                   0.0000000000 [K]
+	Current Adsorbate-Adsorbate energy:          -0.3075316432 [K]
+	Current Cation-Cation energy:                 0.0000000000 [K]
+	Current Adsorbate-Cation energy:              0.0000000000 [K]
+
+WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
+WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
+
+
+[Init] Current cycle: 200 out of 500
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box: 179.21520 -89.46380   0.00000 [A]
+               0.00000 156.32013   0.00000 [A]
+               0.00000   0.00000  21.00000 [A]
+Box-lengths: 179.21520 180.11040  21.00000 Box-angles:   90.00000  90.00000 119.78300 [degrees]
+Volume: 588313.82655 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (O2), current number of integer/fractional/reaction molecules: 11/0/0, density:   0.99350 [kg/m^3]
+	absolute adsorption:   0.40741 [mol/uc],         0.2174 [mol/kg],              6.9576 [mg/g]
+	                                                 4.8735 [cm^3 STP/g],          0.6959 [cm^3 STP/cm^3]
+	excess adsorption:    -0.03261 [mol/uc],        -0.0174 [mol/kg],             -0.5568 [mg/g]
+	                                                -0.3900 [cm^3 STP/g],         -0.0557 [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 55 0 55 0
+Number of Framework-atoms:   5184
+Number of Adsorbates:          11 (11 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
+
+Current total potential energy:                 0.0026691469 [K]
+	Current Host-Host energy:                     0.0000000000 [K]
+	Current Host-Adsorbate energy:                0.0000000000 [K]
+	Current Host-Cation energy:                   0.0000000000 [K]
+	Current Adsorbate-Adsorbate energy:           0.0026691469 [K]
+	Current Cation-Cation energy:                 0.0000000000 [K]
+	Current Adsorbate-Cation energy:              0.0000000000 [K]
+
+WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
+WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
+
+
+[Init] Current cycle: 300 out of 500
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box: 179.21520 -89.46380   0.00000 [A]
+               0.00000 156.32013   0.00000 [A]
+               0.00000   0.00000  21.00000 [A]
+Box-lengths: 179.21520 180.11040  21.00000 Box-angles:   90.00000  90.00000 119.78300 [degrees]
+Volume: 588313.82655 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (O2), current number of integer/fractional/reaction molecules: 11/0/0, density:   0.99350 [kg/m^3]
+	absolute adsorption:   0.40741 [mol/uc],         0.2174 [mol/kg],              6.9576 [mg/g]
+	                                                 4.8735 [cm^3 STP/g],          0.6959 [cm^3 STP/cm^3]
+	excess adsorption:    -0.03261 [mol/uc],        -0.0174 [mol/kg],             -0.5568 [mg/g]
+	                                                -0.3900 [cm^3 STP/g],         -0.0557 [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 55 0 55 0
+Number of Framework-atoms:   5184
+Number of Adsorbates:          11 (11 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
+
+Current total potential energy:                -0.0797384949 [K]
+	Current Host-Host energy:                     0.0000000000 [K]
+	Current Host-Adsorbate energy:                0.0000000000 [K]
+	Current Host-Cation energy:                   0.0000000000 [K]
+	Current Adsorbate-Adsorbate energy:          -0.0797384949 [K]
+	Current Cation-Cation energy:                 0.0000000000 [K]
+	Current Adsorbate-Cation energy:              0.0000000000 [K]
+
+WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
+WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
+
+
+[Init] Current cycle: 400 out of 500
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box: 179.21520 -89.46380   0.00000 [A]
+               0.00000 156.32013   0.00000 [A]
+               0.00000   0.00000  21.00000 [A]
+Box-lengths: 179.21520 180.11040  21.00000 Box-angles:   90.00000  90.00000 119.78300 [degrees]
+Volume: 588313.82655 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (O2), current number of integer/fractional/reaction molecules: 15/0/0, density:   1.35477 [kg/m^3]
+	absolute adsorption:   0.55556 [mol/uc],         0.2965 [mol/kg],              9.4876 [mg/g]
+	                                                 6.6457 [cm^3 STP/g],          0.9490 [cm^3 STP/cm^3]
+	excess adsorption:     0.11554 [mol/uc],         0.0617 [mol/kg],              1.9732 [mg/g]
+	                                                 1.3821 [cm^3 STP/g],          0.1974 [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 75 0 75 0
+Number of Framework-atoms:   5184
+Number of Adsorbates:          15 (15 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction
+
+Current total potential energy:               -28.1845182642 [K]
+	Current Host-Host energy:                     0.0000000000 [K]
+	Current Host-Adsorbate energy:                0.0000000000 [K]
+	Current Host-Cation energy:                   0.0000000000 [K]
+	Current Adsorbate-Adsorbate energy:         -28.1845182642 [K]
+	Current Cation-Cation energy:                 0.0000000000 [K]
+	Current Adsorbate-Cation energy:              0.0000000000 [K]
+
+WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
+WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
+
+
+Average Properties at Current cycle: 0 out of 500
+========================================================================================
+
+Framework surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+	Framework 0 individual surface area:       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+	Cation surface area:                       0.0000000000 [m^2/g]        0.0000000000 [m^2/cm^3]       0.0000000000 [A^2]
+Compressibility:       0.0000000000 [-]
+Henry coefficients
+	Component 0: 0 [mol/kg/Pa] (Rosenbluth factor new: 0 [-])
+Energy <U_gh>_1-<U_h>_0 from Widom
+
+
+Current cycle: 0 out of 500
+========================================================================================================
+
+Net charge: 0 (F: 0, A: 0, C: 0)
+Current Box: 179.21520 -89.46380   0.00000 [A]   Average Box: 179.21520 -89.46380   0.00000 [A]
+               0.00000 156.32013   0.00000 [A]                  0.00000 156.32013   0.00000 [A]
+               0.00000   0.00000  21.00000 [A]                  0.00000   0.00000  21.00000 [A]
+Box-lengths:  179.21520 180.11040  21.00000 [A] Average: 179.21520 180.11040  21.00000 [A]
+Box-angles:   90.00000  90.00000 119.78300 [degrees] Average:  90.00000  90.00000 119.78300 [degrees]
+Volume: 588313.82655 [A^3] Average Volume: 588313.82655 [A^3]
+
+Loadings per component:
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Component 0 (O2), current number of integer/fractional/reaction molecules: 19/0/0 (avg.  19.00000), density:   1.71604 (avg.   1.71604) [kg/m^3]
+	absolute adsorption:   0.70370 (avg.   0.70370) [mol/uc],   0.3755662378 (avg.   0.3755662378) [mol/kg],  12.0176689295 (avg.  12.0176689295) [mg/g]
+	                       8.4179325452 (avg.   8.4179325452) [cm^3 STP/g],    1.2020220983 (avg.   1.2020220983) [cm^3 STP/cm^3]
+	excess adsorption:     0.2636898803 (avg.   0.2636898803) [mol/uc],   0.1407311284 (avg.   0.1407311284) [mol/kg],   4.5032272309 (avg.   4.5032272309) [mg/g]
+	                       3.1543440985 (avg.   3.1543440985) [cm^3 STP/g],    0.4504183529 (avg.   0.4504183529) [cm^3 STP/cm^3]
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Degrees of freedom: 95 0 95 0
+Number of Framework-atoms:   5184
+Number of Adsorbates:          19 (19 integer, 0 fractional, 0 reaction)
+Number of Cations:              0 (0 integer, 0 fractional, 0 reaction)
+
+Current total potential energy:                 0.0019539427 [K]  (avg.           0.0019539427)
+	Current Host-Host energy:                     0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Adsorbate energy:                0.0000000000 [K]  (avg.           0.0000000000)
+	Current Host-Cation energy:                   0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Adsorbate energy:           0.0019539427 [K]  (avg.           0.0019539427)
+	Current Cation-Cation energy:                 0.0000000000 [K]  (avg.           0.0000000000)
+	Current Adsorbate-Cation energy:              0.0000000000 [K]  (avg.           0.0000000000)
+
+WARNING: INAPPROPRIATE NUMBER OF UNIT CELLS USED
+WARNING: THERE ARE ATOM-PAIRS WITH NO VDW INTERACTION O_o2-1 O_o2-2 O_o2-3 O_o2-4 O_o2-5 O_o2-6 O_o2-7 O_o2-8 O_o2-9 O_o2-10 O_o2-11 O_o2-12 O_o2-13 O_o2-14 O_o2-15 O_o2-16 O_o2-17 O_o2-18 O_o2-19 O_o2-20 O_o2-21 O_o2-22 O_o2-23 O_o2-24 O_o2-25 O_o2-26 O_o2-27 O_o2-28 O_o2-29 O_o2-30 O_o2-31 O_o2-32 O_o2-33 O_o2-34 O_o2-35 O_o2-36 O_o2-37 O_o2-38 O_o2-39 O_o2-40 O_o2-41 O_o2-42 O_o2-43 O_o2-44 O_o2-45 O_o2-46 O_o2-47 O_o2-48 O_o2-49 O_o2-50  (maximum 50 interactions shown)
+
+
