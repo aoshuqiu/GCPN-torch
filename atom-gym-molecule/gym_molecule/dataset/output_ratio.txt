@@ -1,2 +1,0 @@
-24 /home/bachelor/zhangjinhang/molRL/zeo++-0.3/builder_examples/building_blocks/Cu2.xyz
-48 /home/bachelor/zhangjinhang/molRL/GCPNs/envs/atom-gym-molecule/gym_molecule/dataset/myby_1.xyz

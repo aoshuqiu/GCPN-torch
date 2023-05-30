@@ -9,7 +9,7 @@ UseChargesFromCIFFile         no
 CutOffVDW                     12.8
 
 Framework                     0
-FrameworkName BrC#CC#CC#CC#CBr_framework
+FrameworkName SC1=NC(C2=CN=C(Br)C=N2)=C(S)N=C1C1=CN=C(Br)C=N1_framework
 HeliumVoidFraction            0.819214
 UnitCells                     3 3 3
 ExternalTemperature           298.0
