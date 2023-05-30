@@ -1,0 +1,24 @@
+.idea/
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.h
+.pytest_cache/
+
+runs/
+video/
+
+atom-gym-molecule/
+molecule_gen/
+liuhaoyu/
+
+xyzs/
+imgs/
+frag_curi_memory/
+
+zeo++_logs/
+*.xyz
+*.cif
