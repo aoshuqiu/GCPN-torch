@@ -8,7 +8,7 @@ from rdkit.DataStructs import cDataStructs
 import os
 
 motif_molset = []
-with open('./molcule_cof_curi_sa_scale02_copy.csv', newline='') as csvfile:
+with open('./molcule_no_curi01.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
     num_count=0
     innovel_count=0
@@ -16,7 +16,7 @@ with open('./molcule_cof_curi_sa_scale02_copy.csv', newline='') as csvfile:
         if row[0] not in motif_molset:
             motif_molset.append(row[0])
             num_count+=1
-        if num_count >= 3000:
+        if num_count >= 10000:
             del(motif_molset[0])   
             num_count-=1   
 dis_arr = []

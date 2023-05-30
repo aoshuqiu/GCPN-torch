@@ -19,7 +19,7 @@ if __name__ == '__main__':
     reporter = TensorBoardReporter() 
     if not os.path.exists("molecule_gen"):
         os.makedirs("./molecule_gen")
-    writer = MolecularWriter('molecule_gen/molcule_frag_norm_3k.csv')
+    writer = MolecularWriter('molecule_gen/molcule_frag_norm_lopp5.csv')
     writer.reporter = reporter
     RDLogger.DisableLog('rdApp.*')
     molenv_context = {
@@ -29,8 +29,8 @@ if __name__ == '__main__':
         "sa_ratio":1,
         "reward_step_total":1,
         "is_normalize":0,
-        "reward_type":'qed',
-        "reward_target":0.5,
+        "reward_type":'logp_target',
+        "reward_target":5,
         "has_scaffold":False,
         "has_feature":False,
         "is_conditional":False,

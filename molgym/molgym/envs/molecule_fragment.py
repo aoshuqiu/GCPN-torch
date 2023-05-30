@@ -178,7 +178,7 @@ class MoleculeFragmentEnv(MoleculeEnv):
                     reward_final_func = self.criticmap[self.reward_type]
                     reward_final = reward_final_func(final_mol)
             except Exception as ex:
-                print(f"reward error : {ex}, {type(ex)}")
+                # print(f"reward error : {ex}, {type(ex)}")
                 reward_final = 0
             
             new = True # end of episode
